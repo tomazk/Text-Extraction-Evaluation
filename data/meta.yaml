@@ -1,0 +1,12 @@
+# Meta data for evaluation instances 
+
+testdataset:
+    -
+        raw: 2.html
+        clean: 2-cleaned.txt
+        url: 
+    -
+        raw: 3.html
+        clean: 3-cleaned.txt
+        url: 
+        
