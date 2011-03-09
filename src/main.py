@@ -17,7 +17,7 @@ class TestDatasetEvaluation(unittest.TestCase):
             print '----------'
             print 'data %s' % dat.raw_filename
             print 'precision %f' % result.precision
-            print 'recall %f' % result.precision
+            print 'recall %f' % result.recall
             print 'f1_score %f' % result.f1_score
 
 if __name__ == '__main__':

@@ -38,9 +38,9 @@ class TextOnlyEvaluator(BaseEvaluator):
         
         rel_union_ret = sum(i.size for i in matches) if len(matches) > 0 else 0
         
-        precision = float(rel_union_ret) / float(len(ret))
-        recall = float(rel_union_ret) / float(len(rel))
-        f1_score = (2. * precision * recall)/(precision + recall)
+        precision = float(rel_union_ret) / float(len(ret)) if len(ret) > 0 else -1.
+        recall = float(rel_union_ret) / float(len(rel)) if len(rel) > 0 else -1.
+        f1_score = (2. * precision * recall)/(precision + recall) if precision != -1. and recall != -1. else -1
         
         return Result(precision, recall, f1_score)
         
