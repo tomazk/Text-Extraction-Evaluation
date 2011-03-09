@@ -33,9 +33,6 @@ class TextOnlyEvaluator(BaseEvaluator):
         rel = self.relevant.get_word_seq()
         ret = self.retrieved.get_word_seq()
         
-        print rel
-        print ret
-        
         s.set_seqs(rel, ret)
         matches = s.get_matching_blocks()[:-1]
         
