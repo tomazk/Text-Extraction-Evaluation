@@ -1,6 +1,9 @@
 import json
 import requests
 import settings
+import readability
+from BeautifulSoup import BeautifulSoup
+
 
 class BaseExtractor(object):
     '''Extractor base class
@@ -19,6 +22,23 @@ class BaseExtractor(object):
     
     def extract_html(self):
         pass
+    
+class PythonReadabilityExtractor(BaseExtractor):
+    '''Extractor based on python-readability 
+    (https://github.com/gfxmonk/python-readability)'''
+    
+    def _get_summary(self):
+        html = self.data_instance.get_raw_html()
+        
+        doc = readability.Document(html)
+        return doc.summary()
+        
+    def extract_text(self):
+        soup = BeautifulSoup(self._get_summary())
+        return ' '.join([tag.text for tag in soup.findAll(recursive=True)])
+    
+    def extract_html(self):
+        return self._get_summary()
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
