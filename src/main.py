@@ -27,7 +27,7 @@ class Results(object):
         
     def printResults(self):
         for extractor_name, results_list in self.results.iteritems():
-            avg_precision = sum([r.precision for r in results_list]) / float(len(results_list))
+            avg_precision = sum([r.precision for r in results_list]) / float(len(results_list)) 
             avg_recall = sum([r.recall for r in results_list]) / float(len(results_list))
             avg_f1 = sum([r.f1_score for r in results_list]) / float(len(results_list))
             print '----------------'
@@ -53,7 +53,8 @@ class TestDatasetEvaluation(unittest2.TestCase):
         evalResults = Results(ex.AlchemyExtractor.NAME)
         
         loader = data.LocalDatasetLoader()
-        for dat in loader.get_dataset('testdataset'):
+        for i,dat in enumerate (loader.get_dataset('testdataset')):
+            print i
             ext = ex.AlchemyExtractor(dat)
             
             ret = ev.AlchemyFormat(ext.extract_text())
@@ -69,7 +70,8 @@ class TestDatasetEvaluation(unittest2.TestCase):
         evalResults = Results(ex.PythonReadabilityExtractor.NAME)
         
         loader = data.LocalDatasetLoader()
-        for dat in loader.get_dataset('testdataset'):
+        for i,dat in enumerate(loader.get_dataset('testdataset')):
+            print i
             ext = ex.PythonReadabilityExtractor(dat)
             
             ret = ev.PythonRedabilityFormat(ext.extract_text())
