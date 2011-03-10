@@ -13,6 +13,7 @@ class BaseExtractor(object):
     should raise a NotImpelemntedError for the respective
     method'''
     
+    NAME = ''# unique name 
     
     def __init__(self, data_instance):
         self.data_instance = data_instance
@@ -26,6 +27,8 @@ class BaseExtractor(object):
 class PythonReadabilityExtractor(BaseExtractor):
     '''Extractor based on python-readability 
     (https://github.com/gfxmonk/python-readability)'''
+    
+    NAME = 'Readability implemented in Python'
     
     def _get_summary(self):
         html = self.data_instance.get_raw_html()
@@ -42,6 +45,8 @@ class PythonReadabilityExtractor(BaseExtractor):
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
+    
+    NAME = 'Alchemy API - text extractor'
     
     def extract_text(self):
         
