@@ -26,8 +26,15 @@ class Results(object):
             self.results[self.extractor].append(result)
         
     def printResults(self):
-        #TODO
-        pass
+        for extractor_name, results_list in self.results.iteritems():
+            avg_precision = sum([r.precision for r in results_list]) / float(len(results_list))
+            avg_recall = sum([r.recall for r in results_list]) / float(len(results_list))
+            avg_f1 = sum([r.f1_score for r in results_list]) / float(len(results_list))
+            print '----------------'
+            print 'Ex. name: %s' % extractor_name
+            print 'avg. precision: %f' % avg_precision 
+            print 'avg. racall: %f' % avg_recall
+            print 'avg. F1 score: %f' % avg_f1
     
     def plotResults(self):
         #TODO
@@ -43,7 +50,7 @@ class TestDatasetEvaluation(unittest2.TestCase):
     
     @skip
     def test_alchemy(self):
-        evalResults = Results(ex.AlchemyExtractor)
+        evalResults = Results(ex.AlchemyExtractor.NAME)
         
         loader = data.LocalDatasetLoader()
         for dat in loader.get_dataset('testdataset'):
@@ -59,7 +66,7 @@ class TestDatasetEvaluation(unittest2.TestCase):
     
     @skip
     def test_python_readability(self):
-        evalResults = Results(ex.PythonReadabilityExtractor)
+        evalResults = Results(ex.PythonReadabilityExtractor.NAME)
         
         loader = data.LocalDatasetLoader()
         for dat in loader.get_dataset('testdataset'):
@@ -77,7 +84,7 @@ def main():
     unittest2.main(exit = False, verbosity = 2)
     
     evalRes = Results()
-    #evalRes.printResults()
+    evalRes.printResults()
     
 
 if __name__ == '__main__':
