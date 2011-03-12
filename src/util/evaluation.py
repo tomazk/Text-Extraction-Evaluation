@@ -1,7 +1,10 @@
+import os
 import re
+import pickle
 import string
 import difflib
 from collections import namedtuple
+import settings
 
 # module utils
 
@@ -11,7 +14,72 @@ def _remove_punctuation(s):
 
 # classes
 
-Result = namedtuple('Result', 'precision recall f1_score')
+Result = namedtuple('Result', 'precision recall f1_score')# result instance
+
+class BaseEvalResults(object):
+    '''Base results container'''
+    
+    __pickle_filepath = os.path.join(settings.PATH_LOCAL_DATA, 'results.pickle')
+    
+    __internal_state = {} # Borg design pattern
+    
+    def __init__(self, extractor = None):
+        self.__dict__ = self.__internal_state
+        
+        # ensure the presence of attributes
+        if not 'text_eval_results' in self.__dict__: 
+            self.text_eval_results = {}
+        
+        if extractor and (not (extractor in self.text_eval_results)):
+            self.text_eval_results[extractor] = []
+            
+        self._extractor = extractor
+
+    def save(self):
+        '''Pickle the internal state'''
+        with open( self.__pickle_filepath ,'wb') as f:
+            pickle.dump( self.__internal_state ,f)
+    
+    def load(self):
+        '''Unpickle the internal state'''
+        with open( self.__pickle_filepath ,'rb') as f:
+            self.__internal_state = pickle.load(f)
+            self.__dict__ = self.__internal_state
+            
+    def appendResult(self, result):
+        '''Append the result instance to the given extractor'''
+        pass
+    
+    def printResults(self):
+        '''Print results to stdout'''
+        pass
+    
+    def plotResults(self):
+        '''Plot results with matplotlib'''
+        pass
+            
+class TextBasedResults(BaseEvalResults):
+            
+    def appendResult(self, result):
+        if self._extractor:
+            self.text_eval_results[self._extractor].append(result)
+        
+    def printResults(self):
+        print 'results based on text based evaluation'
+        for extractor_name, results_list in self.text_eval_results.iteritems():
+            avg_precision = sum([r.precision for r in results_list]) / float(len(results_list)) 
+            avg_recall = sum([r.recall for r in results_list]) / float(len(results_list))
+            avg_f1 = sum([r.f1_score for r in results_list]) / float(len(results_list))
+            print '----------------'
+            print 'Ex. name: %s' % extractor_name
+            print 'avg. precision: %f' % avg_precision 
+            print 'avg. racall: %f' % avg_recall
+            print 'avg. F1 score: %f' % avg_f1
+    
+    def plotResults(self):
+        #TODO
+        pass
+    
 
 class BaseEvaluator():
     '''Outline for evaluators'''

@@ -57,7 +57,8 @@ class LocalDocumentInstance(BaseDocumentInstance):
                                  'raw',
                                  self.raw_filename
                                  )
-        return open(file_path,'r').read()
+        with open(file_path,'r') as f:
+            return f.read()
     
     def get_url(self):
         if self.url: return self.url
@@ -71,8 +72,8 @@ class LocalDocumentInstance(BaseDocumentInstance):
                                  'clean',
                                  self.clean_filename
                                  )
-        s = open(file_path, 'r').read()
-        return CleanEvalFormat(s)
+        with open(file_path, 'r') as f:
+            return CleanEvalFormat(f.read())
              
         
         
