@@ -12,7 +12,7 @@ def _remove_punctuation(s):
     exclude = set(string.punctuation)
     return ''.join( ch for ch in s if ch not in exclude )
 
-# classes
+# results
 
 Result = namedtuple('Result', 'precision recall f1_score')# result instance
 
@@ -30,9 +30,9 @@ class BaseEvalResults(object):
         if not 'text_eval_results' in self.__dict__: 
             self.text_eval_results = {}
         
+        # optional
         if extractor and (not (extractor in self.text_eval_results)):
             self.text_eval_results[extractor] = []
-            
         self._extractor = extractor
 
     def save(self):
@@ -73,13 +73,14 @@ class TextBasedResults(BaseEvalResults):
             print '----------------'
             print 'Ex. name: %s' % extractor_name
             print 'avg. precision: %f' % avg_precision 
-            print 'avg. racall: %f' % avg_recall
+            print 'avg. recall: %f' % avg_recall
             print 'avg. F1 score: %f' % avg_f1
     
     def plotResults(self):
         #TODO
         pass
     
+# evaluators    
 
 class BaseEvaluator():
     '''Outline for evaluators'''
@@ -112,6 +113,7 @@ class TextOnlyEvaluator(BaseEvaluator):
         
         return Result(precision, recall, f1_score)
         
+#formats
     
 class BaseTextResultFormat(object):
     
