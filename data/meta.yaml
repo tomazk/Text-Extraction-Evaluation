@@ -9,4 +9,28 @@ testdataset:
         raw: 3.html
         clean: 3-cleaned.txt
         url: 
+
+        
+testdataset2:
+    - {clean: 30-cleaned.txt, raw: 30.html, url: null}
+    - {clean: 31-cleaned.txt, raw: 31.html, url: null}
+    - {clean: 32-cleaned.txt, raw: 32.html, url: null}
+    - {clean: 33-cleaned.txt, raw: 33.html, url: null}
+    - {clean: 34-cleaned.txt, raw: 34.html, url: null}
+    - {clean: 35-cleaned.txt, raw: 35.html, url: null}
+    - {clean: 36-cleaned.txt, raw: 36.html, url: null}
+    - {clean: 37-cleaned.txt, raw: 37.html, url: null}
+    - {clean: 38-cleaned.txt, raw: 38.html, url: null}
+    - {clean: 39-cleaned.txt, raw: 39.html, url: null}
+    - {clean: 40-cleaned.txt, raw: 40.html, url: null}
+    - {clean: 41-cleaned.txt, raw: 41.html, url: null}
+    - {clean: 42-cleaned.txt, raw: 42.html, url: null}
+    - {clean: 43-cleaned.txt, raw: 43.html, url: null}
+    - {clean: 44-cleaned.txt, raw: 44.html, url: null}
+    - {clean: 45-cleaned.txt, raw: 45.html, url: null}
+    - {clean: 46-cleaned.txt, raw: 46.html, url: null}
+    - {clean: 47-cleaned.txt, raw: 47.html, url: null}
+    - {clean: 48-cleaned.txt, raw: 48.html, url: null}
+    - {clean: 49-cleaned.txt, raw: 49.html, url: null}
+    - {clean: 50-cleaned.txt, raw: 50.html, url: null}
         
