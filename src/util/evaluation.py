@@ -58,39 +58,38 @@ class BaseEvalResults(object):
             
 class TextBasedResults(BaseEvalResults):
             
+    def get_results(self):
+        '''Getter'''
+        return self.text_eval_results
+    
     def append_result(self, result):
         if self._extractor:
             self.text_eval_results[self._extractor].append(result)
-            
-    def precision_statistics(self, extractor):
-        '''Return a tuple containing (avg, stddev)'''
-        results_list = self.text_eval_results[extractor]
-        avg = sum([r.precision for r in results_list]) / float(len(results_list))
+    
+    def _statistics(self, extractor, stat_typ): # DRY helper
+        if stat_typ == 'precision':  selector = 0
+        elif stat_typ == 'recall':   selector = 1
+        elif stat_typ == 'f1_score': selector = 2
         
-        stddev =  sum([(r.precision - avg)**2. for r in results_list]) / float(len(results_list))
+        results_list = self.text_eval_results[extractor]
+        avg = sum([r[selector] for r in results_list]) / float(len(results_list))
+        
+        stddev =  sum([(r[selector] - avg)**2. for r in results_list]) / float(len(results_list))
         stddev = math.sqrt(stddev)
         
         return avg, stddev
+      
+    def precision_statistics(self, extractor):
+        '''Return a tuple containing (avg, stddev)'''
+        return self._statistics(extractor, 'precision')
     
     def recall_statistics(self, extractor):
         '''Return a tuple containing (avg, stddev)'''
-        results_list = self.text_eval_results[extractor]
-        avg = sum([r.recall for r in results_list]) / float(len(results_list))
-        
-        stddev =  sum([(r.recall - avg)**2. for r in results_list]) / float(len(results_list))
-        stddev = math.sqrt(stddev)
-        
-        return avg, stddev
+        return self._statistics(extractor, 'recall')
     
     def f1score_statistics(self, extractor):
         '''Return a tuple containing (avg, stddev)'''
-        results_list = self.text_eval_results[extractor]
-        avg = sum([r.f1_score for r in results_list]) / float(len(results_list))
-        
-        stddev =  sum([(r.f1_score - avg)**2. for r in results_list]) / float(len(results_list))
-        stddev = math.sqrt(stddev)
-        
-        return avg, stddev
+        return self._statistics(extractor, 'f1_score')
         
     def print_results(self):
         print 'results based on text based evaluation'
@@ -101,7 +100,6 @@ class TextBasedResults(BaseEvalResults):
             print 'avg. precision: %f   stddev: %f' % self.precision_statistics(extractor_name) 
             print 'avg. recall: %f   stddev: %f' % self.recall_statistics(extractor_name) 
             print 'avg. F1 score: %f   stddev: %f' % self.f1score_statistics(extractor_name) 
-    
     
 # evaluators    
 
