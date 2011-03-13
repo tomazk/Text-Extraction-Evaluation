@@ -25,7 +25,7 @@ class TestDatasetEvaluation(unittest2.TestCase):
             
             evaluator = ev.TextOnlyEvaluator(ret, rel)
             result = evaluator.get_results()
-            evalResults.appendResult(result)
+            evalResults.append_result(result)
 
     
     @skip
@@ -42,14 +42,14 @@ class TestDatasetEvaluation(unittest2.TestCase):
             
             evaluator = ev.TextOnlyEvaluator(ret, rel)
             result = evaluator.get_results()
-            evalResults.appendResult(result)
+            evalResults.append_result(result)
 
 
 def main():
     unittest2.main(exit = False, verbosity = 2)
     
     evalRes = ev.TextBasedResults()
-    evalRes.printResults()
+    evalRes.print_results()
     evalRes.save()
     
 

@@ -3,6 +3,7 @@ import re
 import pickle
 import string
 import difflib
+import math
 from collections import namedtuple
 import settings
 
@@ -46,39 +47,61 @@ class BaseEvalResults(object):
             self.__internal_state = pickle.load(f)
             self.__dict__ = self.__internal_state
             
-    def appendResult(self, result):
+    def append_result(self, result):
         '''Append the result instance to the given extractor'''
         pass
     
-    def printResults(self):
+    def print_results(self):
         '''Print results to stdout'''
         pass
     
-    def plotResults(self):
-        '''Plot results with matplotlib'''
-        pass
             
 class TextBasedResults(BaseEvalResults):
             
-    def appendResult(self, result):
+    def append_result(self, result):
         if self._extractor:
             self.text_eval_results[self._extractor].append(result)
+            
+    def precision_statistics(self, extractor):
+        '''Return a tuple containing (avg, stddev)'''
+        results_list = self.text_eval_results[extractor]
+        avg = sum([r.precision for r in results_list]) / float(len(results_list))
         
-    def printResults(self):
+        stddev =  sum([(r.precision - avg)**2. for r in results_list]) / float(len(results_list))
+        stddev = math.sqrt(stddev)
+        
+        return avg, stddev
+    
+    def recall_statistics(self, extractor):
+        '''Return a tuple containing (avg, stddev)'''
+        results_list = self.text_eval_results[extractor]
+        avg = sum([r.recall for r in results_list]) / float(len(results_list))
+        
+        stddev =  sum([(r.recall - avg)**2. for r in results_list]) / float(len(results_list))
+        stddev = math.sqrt(stddev)
+        
+        return avg, stddev
+    
+    def f1score_statistics(self, extractor):
+        '''Return a tuple containing (avg, stddev)'''
+        results_list = self.text_eval_results[extractor]
+        avg = sum([r.f1_score for r in results_list]) / float(len(results_list))
+        
+        stddev =  sum([(r.f1_score - avg)**2. for r in results_list]) / float(len(results_list))
+        stddev = math.sqrt(stddev)
+        
+        return avg, stddev
+        
+    def print_results(self):
         print 'results based on text based evaluation'
-        for extractor_name, results_list in self.text_eval_results.iteritems():
-            avg_precision = sum([r.precision for r in results_list]) / float(len(results_list)) 
-            avg_recall = sum([r.recall for r in results_list]) / float(len(results_list))
-            avg_f1 = sum([r.f1_score for r in results_list]) / float(len(results_list))
+        for extractor_name in self.text_eval_results.iterkeys():
+            
             print '----------------'
             print 'Ex. name: %s' % extractor_name
-            print 'avg. precision: %f' % avg_precision 
-            print 'avg. recall: %f' % avg_recall
-            print 'avg. F1 score: %f' % avg_f1
+            print 'avg. precision: %f   stddev: %f' % self.precision_statistics(extractor_name) 
+            print 'avg. recall: %f   stddev: %f' % self.recall_statistics(extractor_name) 
+            print 'avg. F1 score: %f   stddev: %f' % self.f1score_statistics(extractor_name) 
     
-    def plotResults(self):
-        #TODO
-        pass
     
 # evaluators    
 
