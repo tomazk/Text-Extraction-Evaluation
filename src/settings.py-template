@@ -4,8 +4,5 @@ PATH_LOCAL_DATA = '/home/you/data/'
 #path to remote root data directory
 PATH_REMOTE_DATA = 'http://example.com/data/'
 
-#path to the directory that will contain plotting outputs
-PATH_PLOT_OUTPUT = ''
-
 #api keys (you'll have to obtain these yourself)
 ALCHEMY_API_KEY = ''

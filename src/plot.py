@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import settings
-from util.evaluation import TextBasedResults
+from txtexeval.evaluation import TextBasedResults
 
 #helper
 def autolabel(rects):
@@ -64,6 +64,6 @@ w,h = fig.get_size_inches()
 fig.set_size_inches( w*0.75 , h + h*0.30)
 
 # output 
-out_path = os.path.join(settings.PATH_PLOT_OUTPUT, 'img.png')
+out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output',  'img.png')
 plt.savefig( out_path )
 print 'done'

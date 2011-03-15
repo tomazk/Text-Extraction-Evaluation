@@ -1,5 +1,5 @@
 import unittest2
-from util import data, evaluation as ev, extractor as ex
+from txtexeval import data, evaluation as ev, extractor as ex
 
 # debugging utility
 DEBUG = False 

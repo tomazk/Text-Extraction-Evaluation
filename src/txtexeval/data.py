@@ -3,7 +3,7 @@ import os
 import yaml
 
 import settings
-from util.evaluation import CleanEvalFormat
+from .evaluation import CleanEvalFormat
 
 class BaseDatasetLoader(object):
     # if you want a loader with a different backend 
