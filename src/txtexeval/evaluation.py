@@ -21,7 +21,7 @@ Result = namedtuple('Result', 'precision recall f1_score')# result instance
 class BaseEvalResults(object):
     '''Base results container'''
     
-    __pickle_filepath = os.path.join(settings.PATH_LOCAL_DATA, 'results.pickle')
+    __pickle_filepath = os.path.join(settings.PATH_LOCAL_DATA,'results-cache','results.pickle')
     
     __internal_state = {} # Borg design pattern
     
