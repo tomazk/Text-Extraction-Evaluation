@@ -28,7 +28,7 @@ import argparse
 import settings
 
 
-class MetaGenerationError(Exception):
+class MetaGeneratorError(Exception):
     pass
 
 def cleaneval(dataset_name):
@@ -36,7 +36,7 @@ def cleaneval(dataset_name):
     
     dataset_path = os.path.join(settings.PATH_LOCAL_DATA,'datasets' ,dataset_name)
     if not os.path.exists(dataset_path):
-        raise MetaGenerationError('Dataset does not exist: %s' % dataset_name)
+        raise MetaGeneratorError('Dataset does not exist: %s' % dataset_name)
     
     meta_data_list = [] # list to be returned containing meta data
     
@@ -45,11 +45,11 @@ def cleaneval(dataset_name):
             
             # validate raw names
             if not re.match(r'\d+.html', raw_fileanme):
-                raise MetaGenerationError('Raw filename not matching [number].html: %s' % raw_fileanme)
+                raise MetaGeneratorError('Raw filename not matching [number].html: %s' % raw_fileanme)
             # check for an existing clean file counterpart
             clean_filename = raw_fileanme.replace('.html', '') + '-cleaned.txt'
             if not os.path.exists(os.path.join(dataset_path, 'clean', clean_filename )):
-                raise MetaGenerationError('No existing clean file counterpart for %s' % raw_fileanme)
+                raise MetaGeneratorError('No existing clean file counterpart for %s' % raw_fileanme)
             
             # get meta data from <text ...> tag
             soup = BeautifulSoup(f.read())
@@ -100,7 +100,7 @@ def main():
 
         try:
             yaml_output  = cleaneval(args.dataset_name)
-        except MetaGenerationError as e:
+        except MetaGeneratorError as e:
             # print any errors encountered during generating meta data
             print e
             sys.exit(-1)
