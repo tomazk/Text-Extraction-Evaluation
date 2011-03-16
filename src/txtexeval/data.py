@@ -72,7 +72,7 @@ class LocalDocument(BaseDocument):
                                  'raw',
                                  self.raw_filename
                                  )
-        with codecs.open(file_path,'r', encoding = self.raw_encoding) as f:
+        with codecs.open(file_path,'r', encoding = self.raw_encoding, errors = 'ignore') as f:
             return f.read()
     
     def get_url(self):
@@ -88,7 +88,7 @@ class LocalDocument(BaseDocument):
                                  'clean',
                                  self.clean_filename
                                  )
-        with codecs.open(file_path, 'r', encoding =  self.clean_encoding) as f:
+        with codecs.open(file_path, 'r', encoding =  self.clean_encoding, errors = 'ignore') as f:
             return CleanEvalFormat(f.read())
              
         

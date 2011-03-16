@@ -1,4 +1,3 @@
-- result format
-- error handling when opening files
 - unit testing
 - docstrings
+- python-readability: minor issues with internal handling of unicode input 
