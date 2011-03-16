@@ -61,7 +61,7 @@ plt.subplots_adjust( wspace=0.5, hspace=0.5)
 #adjust figure height
 fig = plt.gcf()
 w,h = fig.get_size_inches()
-fig.set_size_inches( w*0.75 , h + h*0.30)
+fig.set_size_inches( w*0.75 , h*1.30)
 
 # output 
 out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output',  'img.png')

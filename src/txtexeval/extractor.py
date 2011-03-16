@@ -1,9 +1,10 @@
 import json
+
 import requests
-import settings
 import readability
 from BeautifulSoup import BeautifulSoup
 
+import settings
 
 class BaseExtractor(object):
     '''Extractor base class
@@ -28,7 +29,7 @@ class PythonReadabilityExtractor(BaseExtractor):
     '''Extractor based on python-readability 
     (https://github.com/gfxmonk/python-readability)'''
     
-    NAME = 'Readability implemented in Python'
+    NAME = 'Python Readability'
     
     def _get_summary(self):
         html = self.data_instance.get_raw_html()
@@ -46,7 +47,7 @@ class PythonReadabilityExtractor(BaseExtractor):
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
     
-    NAME = 'Alchemy API - text extractor'
+    NAME = 'Alchemy API'
     
     def extract_text(self):
         
@@ -62,8 +63,9 @@ class AlchemyExtractor(BaseExtractor):
         if request.status_code != 200:
             raise RuntimeError('Something went wrong when accessing Alchemy API')
         
-        #dump all meta-data in the response and return the extracted text
-        return json.loads(request.content)['text']
+        # dump all meta-data in the response and return the extracted text
+        # Alchemy API ensures utf-8 encoding for every response 
+        return json.loads(request.content, encoding = 'utf8')['text']
     
     def extract_html(self):
         raise NotImplementedError('Alchemy API doesn\'t support html based extraction' )

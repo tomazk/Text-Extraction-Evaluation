@@ -5,6 +5,7 @@ import string
 import difflib
 import math
 from collections import namedtuple
+
 import settings
 
 # module utils

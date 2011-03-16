@@ -67,12 +67,15 @@ def cleaneval(dataset_name):
             
             meta_data_list.append(dict(
                 url = None,
-                encoding = safe_encoding,
+                raw_encoding = safe_encoding,
+                # acording to anotation guidelines of cleaneval 
+                # all cleaned text files are in utf-8
+                clean_encoding = 'utf-8',
                 raw = raw_fileanme,
                 clean = clean_filename,
             ))
             
-    return yaml.dump(meta_data_list, default_flow_style=False)
+    return yaml.dump(meta_data_list, default_flow_style=False)    
 
 def main():
     # sys argument parsing trough argparse
@@ -87,13 +90,12 @@ def main():
     print 'dataset type: %s' % args.dataset_type
     print 'dataset name: %s' % args.dataset_name
     
-    # validating path arguent
+    # verifying path argument
     if args.path and not os.path.exists(args.path):
         print 'error: path does not exist'
         sys.exit(-1)
-    
-    output_path = os.path.join(args.path, 'meta.yaml')  if args.path else \
-    os.path.join(settings.PATH_LOCAL_DATA, 'datasets', args.dataset_name ,'meta.yaml') 
+    output_dir = args.path or os.path.join(settings.PATH_LOCAL_DATA, 'datasets', args.dataset_name)
+    output_path = os.path.join(output_dir, 'meta.yaml')  
     print 'output path: %s' % output_path
     
     if args.dataset_type == 'cleaneval':

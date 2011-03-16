@@ -1,33 +1,40 @@
-import urlparse
 import os
+import urlparse
+import codecs
+
 import yaml
 
 import settings
 from .evaluation import CleanEvalFormat
 
 class BaseDatasetLoader(object):
-    # if you want a loader with a different backend 
-    # (e.g. database)just extend this class and implement
-    # get_dataset method which returns a some sort of
-    # BaseDocumentInstance  generator
+    '''
+    If you want a loader with a different backend (e.g. database)just extend 
+    this class and implement __iter__ method which returns an iterator over 
+    document instances
+    '''
     
-    def get_dataset(self):
-        pass
+    def __iter__(self):
+        raise NotImplementedError
 
 class LocalDatasetLoader(BaseDatasetLoader):
-    '''Data instance loading utility using local filesystem'''
+    '''Dataset loader using local filesystem'''
     
-    def __init__(self):
-        meta_filepath = os.path.join(settings.PATH_LOCAL_DATA, 'meta.yaml')
-        self.meta_yaml = yaml.load(open(meta_filepath,'r').read())
+    def __init__(self, dataset_name):
+        self.dataset_name = dataset_name
+        
+        # load meta data
+        meta_filepath = os.path.join(settings.PATH_LOCAL_DATA, 'datasets', dataset_name, 'meta.yaml')
+        with open(meta_filepath, 'r') as f:
+            self.meta_yaml = yaml.load(f.read())
     
-    def get_dataset(self, dataset_name):
+    def __iter__(self):
         '''DataInstance generator'''
-        for dict in self.meta_yaml[dataset_name]:
-            yield LocalDocumentInstance(dataset_name, **dict)
+        for dict in self.meta_yaml:
+            yield LocalDocument(self.dataset_name, **dict)
     
 
-class BaseDocumentInstance(object):
+class BaseDocument(object):
     # same goes for document instances
     
     def get_raw_html(self):
@@ -41,23 +48,31 @@ class BaseDocumentInstance(object):
         pass
     
 
-class LocalDocumentInstance(BaseDocumentInstance):
+class LocalDocument(BaseDocument):
     '''Evaluation data representation using local filesystem'''
     
     def __init__(self, dataset, **kwargs):
         self.dataset = dataset
+        
+        # instance attributes
         self.raw_filename = kwargs.pop('raw')
         self.clean_filename = kwargs.pop('clean')
         self.url = kwargs.pop('url')
         
+        # choosing utf-8 if no encoding is provided is based on the observation 
+        # that only ascii chars are used in such files e.g. CleanEval 
+        self.raw_encoding = kwargs.pop('raw_encoding') or 'utf-8'
+        self.clean_encoding = kwargs.pop('clean_encoding') or 'utf-8'
+        
         
     def get_raw_html(self):
         file_path = os.path.join(settings.PATH_LOCAL_DATA,
+                                 'datasets',
                                  self.dataset,
                                  'raw',
                                  self.raw_filename
                                  )
-        with open(file_path,'r') as f:
+        with codecs.open(file_path,'r', encoding = self.raw_encoding) as f:
             return f.read()
     
     def get_url(self):
@@ -68,11 +83,12 @@ class LocalDocumentInstance(BaseDocumentInstance):
         
     def get_result(self):
         file_path = os.path.join(settings.PATH_LOCAL_DATA,
+                                 'datasets',
                                  self.dataset,
                                  'clean',
                                  self.clean_filename
                                  )
-        with open(file_path, 'r') as f:
+        with codecs.open(file_path, 'r', encoding =  self.clean_encoding) as f:
             return CleanEvalFormat(f.read())
              
         
