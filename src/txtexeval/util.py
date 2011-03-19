@@ -1,7 +1,7 @@
 import urllib
 import urllib2
 
-class Response(object):
+class _Response(object):
     
     def __init__(self, status_code = None, headers = None, content = None, err_msg = None):
         self.status_code = status_code
@@ -32,15 +32,15 @@ class Request(object):
         try: 
             r = urllib2.urlopen(request)
         except urllib2.URLError as e:
-            return Response(err_msg = str(e.reason))
+            return _Response(err_msg = str(e.reason))
         else:
-            return Response(r.code, r.headers, r.read())
+            return _Response(r.code, r.headers, r.read())
             
     def get(self):
         request = urllib2.Request('%s?%s' % (self.url, self.data), **self.kwargs)
         try: 
             r = urllib2.urlopen(request)
         except urllib2.URLError as e:
-            return Response(err_msg = str(e.reason))
+            return _Response(err_msg = str(e.reason))
         else:
-            return Response(r.code, r.headers, r.read())
+            return _Response(r.code, r.headers, r.read())

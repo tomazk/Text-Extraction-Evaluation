@@ -1,10 +1,13 @@
 import json
 
-import requests
 import readability
 from BeautifulSoup import BeautifulSoup
 
 import settings
+from .util import Request
+
+class ExtractorError(Exception):
+    pass
 
 class BaseExtractor(object):
     '''Extractor base class
@@ -50,25 +53,27 @@ class AlchemyExtractor(BaseExtractor):
     NAME = 'Alchemy API'
     
     def extract_text(self):
-        
         html = self.data_instance.get_raw_html()
         
-        request = requests.post(
+        req = Request(
             'http://access.alchemyapi.com/calls/html/HTMLGetText',
-             data = {'apikey':settings.ALCHEMY_API_KEY,
-                     'html': html,
-                     'outputMode':'json'
-                     }
-             )
-        if request.status_code != 200:
-            raise RuntimeError('Something went wrong when accessing Alchemy API')
+            data = {'apikey':settings.ALCHEMY_API_KEY,
+                    'html': html.encode(self.data_instance.raw_encoding),
+                    'outputMode':'json'
+            } 
+            
+        )
+        res = req.post()
+        
+        if not res.success():
+            raise ExtractorError(res.err_msg)
         
         # dump all meta-data in the response and return the extracted text
         # Alchemy API ensures utf-8 encoding for every response 
-        return json.loads(request.content, encoding = 'utf8')['text']
+        return json.loads(res.content, encoding = 'utf8')['text']
     
     def extract_html(self):
-        raise NotImplementedError('Alchemy API doesn\'t support html based extraction' )
+        raise NotImplementedError
         
     
     
