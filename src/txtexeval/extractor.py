@@ -28,6 +28,31 @@ class BaseExtractor(object):
     def extract_html(self):
         pass
     
+class MSSExtractor(BaseExtractor):
+    '''MSS implementation by Jeffrey Pasternack'''
+    
+    NAME = 'MSS'
+    
+    def extract_text(self):
+        soup = BeautifulSoup(self.extract_html().encode('utf-8'), fromEncoding = 'utf-8')
+        return ' '.join([tag.text for tag in soup.findAll(recursive=True)])
+    
+    def extract_html(self):
+        html = self.data_instance.get_raw_html()
+        
+        req = Request(
+            dict(settings.MSS_URL)['text'],
+            #this implementation requires utf-8 encoded input
+            data = html.encode('utf-8'),
+            headers= {'Content-Type': 'text/plain;charset=UTF-8'}
+        )
+        res = req.post()
+        
+        if not res.success():
+            raise ExtractorError(res.err_msg)
+        
+        return unicode(res.content, encoding = 'utf-8')
+    
 class PythonReadabilityExtractor(BaseExtractor):
     '''Extractor based on python-readability 
     (https://github.com/gfxmonk/python-readability)'''

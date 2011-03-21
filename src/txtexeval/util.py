@@ -7,15 +7,25 @@ class _Response(object):
         self.status_code = status_code
         self.headers = headers
         self.content = content
-        self.err_msg = err_msg
+        self._err_msg = err_msg
         
     def success(self):
-        if self.err_msg: 
+        if self._err_msg: 
             return False
         elif self.status_code and str(self.status_code).startswith('2'):# see RFC 2616
             return True
         else: 
             return False 
+    
+    @property
+    def err_msg(self):
+        if self._err_msg: 
+            return self._err_msg
+        elif self.status_code and str(self.status_code).startswith('2'):
+            return 'Status code: %i' % self.status_code
+        else: 
+            return '' 
+            
 
 class Request(object):
     

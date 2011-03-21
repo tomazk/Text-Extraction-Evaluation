@@ -145,7 +145,7 @@ class BaseTextResultFormat(object):
     def get_word_seq(self):# sequence of words
         pass
     
-class AlchemyFormat(BaseTextResultFormat):
+class TextResultFormat(BaseTextResultFormat):
     
     def __init__(self, result_string):
         self._strip = _remove_punctuation(result_string)
@@ -156,10 +156,6 @@ class AlchemyFormat(BaseTextResultFormat):
     
     def get_bow(self):
         raise NotImplementedError
-    
-class PythonRedabilityFormat(AlchemyFormat):
-    # basically the same as AlchemyFormat
-    pass 
     
 class CleanEvalFormat(BaseTextResultFormat):
     

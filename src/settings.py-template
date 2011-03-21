@@ -6,3 +6,10 @@ PATH_REMOTE_DATA = 'http://example.com/data/'
 
 #api keys (you'll have to obtain these yourself)
 ALCHEMY_API_KEY = ''
+
+#MSS api endpoint provided by Jeffrey Pasternack <jpaster2@illinois.edu>
+#(I'm not allowed to distribute this url)
+MSS_URL = (
+    ('text', ''),
+    ('offset', ''),
+)
