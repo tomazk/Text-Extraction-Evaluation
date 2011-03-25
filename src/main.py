@@ -64,6 +64,60 @@ class TestDatasetEvaluation(unittest2.TestCase):
                 evaluator = ev.TextOnlyEvaluator(ret, rel)
                 result = evaluator.get_results()
                 evalResults.append_result(result)
+                
+    @skip_when_debugging
+    def test_boilerpipe_default(self):
+        evalResults = ev.TextBasedResults(ex.BoilerpipeDefaultExtractor.NAME)
+        
+        loader = data.LocalDatasetLoader('testdataset2')
+        for dat in loader:
+            print 'working on %s' % dat.raw_filename
+            ext = ex.BoilerpipeDefaultExtractor(dat)
+            try:
+                ret = ev.TextResultFormat(ext.extract_text())
+            except ex.ExtractorError as e:
+                print 'skipped %s: %s' % dat.raw_filename, str(e)
+            else:
+                rel = dat.get_result()
+                evaluator = ev.TextOnlyEvaluator(ret, rel)
+                result = evaluator.get_results()
+                evalResults.append_result(result)
+                
+    @skip_when_debugging
+    def test_boilerpipe_article(self):
+        evalResults = ev.TextBasedResults(ex.BoilerpipeArticleExtractor.NAME)
+        
+        loader = data.LocalDatasetLoader('testdataset2')
+        for dat in loader:
+            print 'working on %s' % dat.raw_filename
+            ext = ex.BoilerpipeArticleExtractor(dat)
+            try:
+                ret = ev.TextResultFormat(ext.extract_text())
+            except ex.ExtractorError as e:
+                print 'skipped %s: %s' % dat.raw_filename, str(e)
+            else:
+                rel = dat.get_result()
+                evaluator = ev.TextOnlyEvaluator(ret, rel)
+                result = evaluator.get_results()
+                evalResults.append_result(result)
+                
+    @skip_when_debugging
+    def test_goose(self):
+        evalResults = ev.TextBasedResults(ex.GooseExtractor.NAME)
+        
+        loader = data.LocalDatasetLoader('testdataset2')
+        for dat in loader:
+            print 'working on %s' % dat.raw_filename
+            ext = ex.GooseExtractor(dat)
+            try:
+                ret = ev.TextResultFormat(ext.extract_text())
+            except ex.ExtractorError as e:
+                print 'skipped %s: %s' % dat.raw_filename, str(e)
+            else:
+                rel = dat.get_result()
+                evaluator = ev.TextOnlyEvaluator(ret, rel)
+                result = evaluator.get_results()
+                evalResults.append_result(result)
 
    
 def main():

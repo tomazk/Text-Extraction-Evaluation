@@ -30,7 +30,7 @@ for i,pdata in enumerate(packaged_data):
     # package plotting values 
     num_of_extractors = len(extractor_names)
     ind = np.arange(num_of_extractors)  # the x locations for the groups
-    width = 0.25      # the width of the bars
+    width = 0.35      # the width of the bars
     
     avg = [ x[0] for x in pdata[1]]
     stddev = [ x[1] for x in pdata[1]]
@@ -61,7 +61,7 @@ plt.subplots_adjust( wspace=0.5, hspace=0.5)
 #adjust figure height
 fig = plt.gcf()
 w,h = fig.get_size_inches()
-fig.set_size_inches( w*0.75 , h*1.30)
+fig.set_size_inches( w*1.20 , h*1.30)
 
 # output 
 out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output',  'img.png')

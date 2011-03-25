@@ -13,3 +13,9 @@ MSS_URL = (
     ('text', ''),
     ('offset', ''),
 )
+
+#Boilerpipe API url (https://github.com/tomazk/Java-Text-Extractor-API)
+BOILERPIPE_API_ENDPOINT = 'http://yourdomain/boilerpipe/extract/'
+
+#Goose API url (https://github.com/tomazk/Java-Text-Extractor-API)
+GOOSE_API_ENDPOINT = 'http://yourdomain/goose/extract/'

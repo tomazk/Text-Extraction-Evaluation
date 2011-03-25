@@ -28,6 +28,73 @@ class BaseExtractor(object):
     def extract_html(self):
         pass
     
+class BoilerpipeDefaultExtractor(BaseExtractor):
+    '''Boilerpipe default extractor '''
+    
+    NAME = 'Boilerpipe DEF'
+    
+    __extractor_type = 'default'
+    
+    def extract_text(self):
+        html = self.data_instance.get_raw_html()
+        
+        req = Request(
+            settings.BOILERPIPE_API_ENDPOINT,
+            data = {
+                "extractorType":self.__extractor_type,
+                "rawHtml": html.encode(self.data_instance.raw_encoding) 
+            },
+            headers = {'Content-Type':'application/x-www-form-urlencoded'}
+        )
+        res = req.post()
+
+        if not res.success():
+            raise ExtractorError(res.err_msg)
+        
+        response_content = json.loads(res.content)
+        if response_content['status'] == "ERROR":
+            raise ExtractorError(response_content['errorMsg'].encode('utf-8'))
+        
+        return response_content['result']
+    
+    def extract_html(self):
+        raise NotImplementedError
+    
+class BoilerpipeArticleExtractor(BoilerpipeDefaultExtractor):
+    '''Boilerpipe article extractor'''
+    
+    NAME = 'Boilerpipe ART'
+    
+    __extractor_type = 'article'
+    
+    
+class GooseExtractor(BaseExtractor):
+    '''Goose project extractor'''
+    
+    NAME = 'Goose'
+    
+    def extract_text(self):
+        html = self.data_instance.get_raw_html()
+        
+        req = Request(
+            settings.GOOSE_API_ENDPOINT,
+            data = dict(rawHtml = html),
+            headers = {'Content-Type':'application/x-www-form-urlencoded'}
+        )
+        res = req.post()
+
+        if not res.success():
+            raise ExtractorError(res.err_msg)
+        
+        response_content = json.loads(res.content)
+        if response_content['status'] == "ERROR":
+            raise ExtractorError(response_content['errorMsg'].encode('utf-8'))
+        
+        return response_content['result']
+    
+    def extract_html(self):
+        raise NotImplementedError
+    
 class MSSExtractor(BaseExtractor):
     '''MSS implementation by Jeffrey Pasternack'''
     
@@ -90,12 +157,15 @@ class AlchemyExtractor(BaseExtractor):
         )
         res = req.post()
         
+        response_content = json.loads(res.content, encoding = 'utf8')
         if not res.success():
             raise ExtractorError(res.err_msg)
+        if response_content['status'] == 'ERROR':
+            raise ExtractorError(response_content['statusInfo'].encode('utf8'))
         
         # dump all meta-data in the response and return the extracted text
         # Alchemy API ensures utf-8 encoding for every response 
-        return json.loads(res.content, encoding = 'utf8')['text']
+        return response_content['text']
     
     def extract_html(self):
         raise NotImplementedError
