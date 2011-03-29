@@ -43,7 +43,7 @@ for i,pdata in enumerate(packaged_data):
     # lables and titles
     plt.title(pdata[0])
     
-    plt.xticks(ind+width, extractor_names, size = 'small' )
+    plt.xticks(ind+width, extractor_names, size = 'x-small' )
     
     plt.legend( (rects_avg[0], rects_stddev[0]),
                  ('avg', 'stddev'),

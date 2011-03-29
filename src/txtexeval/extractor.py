@@ -7,7 +7,12 @@ import settings
 from .util import Request
 
 class ExtractorError(Exception):
-    pass
+    
+    def __init__(self, msg):
+        self.msg = msg
+        
+    def __str__(self):
+        return self.msg
 
 class BaseExtractor(object):
     '''Extractor base class
@@ -119,6 +124,34 @@ class MSSExtractor(BaseExtractor):
             raise ExtractorError(res.err_msg)
         
         return unicode(res.content, encoding = 'utf-8')
+
+class NodeReadabilityExtractor(BaseExtractor):
+    '''Extractor based on node-readability'''
+    
+    NAME = 'Node Readability'
+    
+    def extract_text(self):
+        soup = BeautifulSoup(self.extract_html().encode('utf-8'), fromEncoding = 'utf-8')
+        return ' '.join([tag.text for tag in soup.findAll(recursive=True)])
+    
+    def extract_html(self):
+        html = self.data_instance.get_raw_html()
+        
+        req = Request(
+            settings.READABILITY_ENDPOINT,
+            #this implementation requires utf-8 encoded input
+            data = html.encode('utf-8'),
+            headers= {'Content-Type': 'text/plain;charset=UTF-8'}
+        )
+        res = req.post()
+        
+        response_content = json.loads(res.content)
+        if not res.success():
+            raise ExtractorError(res.err_msg)
+        if response_content['status'] == "ERROR":
+            raise ExtractorError('Readability ERROR')
+        
+        return response_content['result']        
     
 class PythonReadabilityExtractor(BaseExtractor):
     '''Extractor based on python-readability 

@@ -24,7 +24,7 @@ class TestDatasetEvaluation(unittest2.TestCase):
             try:
                 ret = ev.TextResultFormat(ext.extract_text())
             except ex.ExtractorError as e:
-                print 'skipped %s: %s' % dat.raw_filename, str(e)
+                print 'skipped %s: %s' % (dat.raw_filename, str(e))
             else:
                 rel = dat.get_result()
                 evaluator = ev.TextOnlyEvaluator(ret, rel)
@@ -46,6 +46,24 @@ class TestDatasetEvaluation(unittest2.TestCase):
             evaluator = ev.TextOnlyEvaluator(ret, rel)
             result = evaluator.get_results()
             evalResults.append_result(result)
+    
+    @skip_when_debugging
+    def test_node_readability(self):
+        evalResults = ev.TextBasedResults(ex.NodeReadabilityExtractor.NAME)
+        
+        loader = data.LocalDatasetLoader('testdataset2', raw_filter=data.cleaneval_raw_html_filter)
+        for dat in loader:
+            print 'working on %s' % dat.raw_filename
+            ext = ex.NodeReadabilityExtractor(dat)
+            try:
+                ret = ev.TextResultFormat(ext.extract_text())
+            except ex.ExtractorError as e:
+                print 'skipped %s: %s' % (dat.raw_filename, str(e))
+            else:
+                rel = dat.get_result()
+                evaluator = ev.TextOnlyEvaluator(ret, rel)
+                result = evaluator.get_results()
+                evalResults.append_result(result)
             
     @skip_when_debugging
     def test_MSS(self):
@@ -58,7 +76,7 @@ class TestDatasetEvaluation(unittest2.TestCase):
             try:
                 ret = ev.TextResultFormat(ext.extract_text())
             except ex.ExtractorError as e:
-                print 'skipped %s: %s' % dat.raw_filename, str(e)
+                print 'skipped %s: %s' % (dat.raw_filename, str(e))
             else:
                 rel = dat.get_result()
                 evaluator = ev.TextOnlyEvaluator(ret, rel)
@@ -76,7 +94,7 @@ class TestDatasetEvaluation(unittest2.TestCase):
             try:
                 ret = ev.TextResultFormat(ext.extract_text())
             except ex.ExtractorError as e:
-                print 'skipped %s: %s' % dat.raw_filename, str(e)
+                print 'skipped %s: %s' % (dat.raw_filename, str(e))
             else:
                 rel = dat.get_result()
                 evaluator = ev.TextOnlyEvaluator(ret, rel)
@@ -94,7 +112,7 @@ class TestDatasetEvaluation(unittest2.TestCase):
             try:
                 ret = ev.TextResultFormat(ext.extract_text())
             except ex.ExtractorError as e:
-                print 'skipped %s: %s' % dat.raw_filename, str(e)
+                print 'skipped %s: %s' % (dat.raw_filename, str(e))
             else:
                 rel = dat.get_result()
                 evaluator = ev.TextOnlyEvaluator(ret, rel)
@@ -112,12 +130,13 @@ class TestDatasetEvaluation(unittest2.TestCase):
             try:
                 ret = ev.TextResultFormat(ext.extract_text())
             except ex.ExtractorError as e:
-                print 'skipped %s: %s' % dat.raw_filename, str(e)
+                print 'skipped %s: %s' % (dat.raw_filename, str(e))
             else:
                 rel = dat.get_result()
                 evaluator = ev.TextOnlyEvaluator(ret, rel)
                 result = evaluator.get_results()
                 evalResults.append_result(result)
+                
 
    
 def main():
