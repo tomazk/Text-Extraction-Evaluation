@@ -31,6 +31,15 @@ import settings
 class MetaGeneratorError(Exception):
     pass
 
+def _get_attribute(tag, name):
+    # params: BS tag and attribute name
+    # return None or attribute value
+    # takes care of encoding
+    try: 
+        return tag[name].encode('ascii', 'ignore')
+    except KeyError:
+        return None
+    
 def cleaneval(dataset_name):
     '''Meta data generator for cleaneval-ish datasets'''
     
@@ -56,6 +65,16 @@ def cleaneval(dataset_name):
             text_tag = soup.find('text')
             encoding = text_tag['encoding']
             
+            # extract dataset specific meta-data and store it into a dict with
+            # keys id, title, encoding
+            # since we'll be removing the <text> tag from every document
+            # we better store this attributes in it's original form in meta.yaml
+            cleaneval_specific = {
+                'id': _get_attribute(text_tag, 'id'),
+                'title': _get_attribute(text_tag, 'title'),
+                'encoding': _get_attribute(text_tag, 'encoding'),
+            }
+            
             # get a safe encoding name
             try:
                 codec = codecs.lookup(encoding)
@@ -69,10 +88,11 @@ def cleaneval(dataset_name):
                 url = None,
                 raw_encoding = safe_encoding,
                 # acording to anotation guidelines of cleaneval 
-                # all cleaned text files are in utf-8
+                # all cleaned text files are utf-8 encoded
                 clean_encoding = 'utf-8',
                 raw = raw_fileanme,
                 clean = clean_filename,
+                meta = cleaneval_specific
             ))
             
     return yaml.dump(meta_data_list, default_flow_style=False)    
