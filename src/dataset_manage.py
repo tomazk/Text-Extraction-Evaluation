@@ -65,6 +65,31 @@ def _get_attribute(tag, name):
         return tag[name].encode('ascii', 'ignore')
     except KeyError:
         return None
+    
+def _remove_text_tag(html_string, filename):
+    # Cleaneval has a <text> tag that wraps the whole html structure. This 
+    # function removes it with a pessimistic regular expression because we don't 
+    # want to mess with the rest of the structure with a parser
+    
+    # remove <text> at the beginning
+    regex_beg = re.compile(r'(?P<text_tag>^(\s*)<(\s*)text((\s*)(id|title|encoding)(\s*)=(\s*)"(.*)")*(\s*)>)')
+    match_start = regex_beg.match(html_string)
+    if match_start:
+        logging.debug('removing text tag in %s: %s', filename, match_start.group('text_tag'))
+        html_string = regex_beg.sub('', html_string)
+    else:
+        raise PreprocessingError('no starting text tag in %s' % filename)
+
+    # remove </text>
+    regex_end = re.compile(r'(?P<closing_text_tag><(\s*)/(\s*)text(\s*)>(.*)$)')
+    match_end = regex_end.search(html_string)
+    if match_end:
+        logging.debug('removing closing text tag in %s: %s', filename, match_end.group('closing_text_tag'))
+        html_string = regex_end.sub('', html_string)
+    else:
+        raise PreprocessingError('no closing text tag in %s' % filename)
+    
+    return html_string
 
 class CleanevalProcessor(object):
     
@@ -72,29 +97,32 @@ class CleanevalProcessor(object):
         self._dataset_dir = os.path.join(settings.PATH_LOCAL_DATA,'datasets',dataset_name)
         self._output_dir = output_dir
         
+    def _raw_filenames(self):       
+        return os.listdir(os.path.join(self._dataset_dir, 'raw')) 
+    
     def create_backups(self):
         # rename every unprocessed [number].html to [number].html.backup 
         
-        for raw_filename in os.listdir(os.path.join(self._dataset_dir, 'raw')):
+        for raw_filename in self._raw_filenames():
             
             # validate raw filename names
-            if not re.match(r'\d+.html', raw_filename):
-                logging.warn('skipping file %s for not matching cleaneval naming convention', raw_filename)
+            if not re.match(r'^\d+.html$', raw_filename):
+                logging.debug('skipping file %s for not matching cleaneval naming convention', raw_filename)
                 continue
             
             raw_filename_path = os.path.join(self._dataset_dir, 'raw', raw_filename)
             backup_path = raw_filename_path + '.backup'
             logging.info('renaming %s to %s', raw_filename, raw_filename + '.backup')
             os.rename(raw_filename_path, backup_path)
-            
+    
     def generate_meta_data(self):
         
         meta_data_list = [] # list to be serialized
         
-        for raw_filename in os.listdir(os.path.join(self._dataset_dir, 'raw')):
+        for raw_filename in self._raw_filenames():
       
             # validate raw names
-            if not re.match(r'\d+.html.backup', raw_filename):
+            if not re.match(r'^\d+.html.backup$', raw_filename):
                 raise MetaGeneratorError('Raw filename backup not matching [number].html.backup: %s' % raw_filename)
             
             with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
@@ -147,8 +175,37 @@ class CleanevalProcessor(object):
             meta_string = yaml.dump(meta_data_list, default_flow_style=False) 
             meta_file.write(meta_string)
             
+    def preprocess(self):
+        # remove all <text> tags
+        # add missing <html><body> tags where needed
         
-
+        for raw_filename in self._raw_filenames():
+            # validate raw filename names
+            if not re.match(r'^\d+.html.backup$', raw_filename):
+                logging.debug('skipping file %s during preprocessing', raw_filename)
+                continue
+            
+            with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
+                html_string = _remove_text_tag(f.read(), raw_filename)
+                
+                soup = BeautifulSoup(html_string)
+                if (not soup.find('html')) and (not soup.find('body')):
+                    # no html no body tag
+                    logging.warn('appending body and html tags to %s', raw_filename)
+                    html_string = '<html><body>  %s  </body></html>' % html_string
+                    
+                elif (not soup.find('html')) or (not soup.find('body')):
+                    # really weird case
+                    raise PreprocessingError('this file has html tag or body tag but not both') 
+                else:
+                    logging.info('no tag appending on %s', raw_filename)
+                
+                output_filename = raw_filename.replace('.backup','')
+                logging.debug('preprocesing complete: %s ---> %s',raw_filename,output_filename)
+                with open(os.path.join(self._dataset_dir, 'raw', output_filename) ,'w') as output:
+                    output.write(html_string)
+                
+        
 def main():
     # sys argument parsing trough argparse
     parser = argparse.ArgumentParser(description = 'Tool for generating meta data files and cleanup preprocessing regarding datasets')
@@ -166,12 +223,19 @@ def main():
     
     if args.dataset_type == 'cleaneval':
         processor = CleanevalProcessor(output_dir, args.dataset_name)
-        print '[CREATE BACKUPS]'
-        processor.create_backups()
-        print '[GENERATING META DATA]'
         try:
+            print '[CREATE BACKUPS]'
+            processor.create_backups()
+            print '[GENERATING META DATA]'
             processor.generate_meta_data()
+            print '[PREPROCESSING]'
+            processor.preprocess()
         except MetaGeneratorError as e:
+            print 'META DATA RELATED ERROR:'
+            print e
+            sys.exit(-1)
+        except PreprocessingError as e:
+            print 'PREPROCESSING ERROR:'
             print e
             sys.exit(-1)
     print '[DONE]'
