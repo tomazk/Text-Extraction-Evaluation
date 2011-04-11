@@ -28,6 +28,8 @@ import argparse
 
 import settings
 
+logger = logging.getLogger()
+
 class MetaGeneratorError(Exception):
     pass
 
@@ -75,7 +77,7 @@ def _remove_text_tag(html_string, filename):
     regex_beg = re.compile(r'(?P<text_tag>^(\s*)<(\s*)text((\s*)(id|title|encoding)(\s*)=(\s*)"(.*)")*(\s*)>)')
     match_start = regex_beg.match(html_string)
     if match_start:
-        logging.debug('removing text tag in %s: %s', filename, match_start.group('text_tag'))
+        logger.debug('removing text tag in %s: %s', filename, match_start.group('text_tag'))
         html_string = regex_beg.sub('', html_string)
     else:
         raise PreprocessingError('no starting text tag in %s' % filename)
@@ -84,7 +86,7 @@ def _remove_text_tag(html_string, filename):
     regex_end = re.compile(r'(?P<closing_text_tag><(\s*)/(\s*)text(\s*)>(.*)$)')
     match_end = regex_end.search(html_string)
     if match_end:
-        logging.debug('removing closing text tag in %s: %s', filename, match_end.group('closing_text_tag'))
+        logger.debug('removing closing text tag in %s: %s', filename, match_end.group('closing_text_tag'))
         html_string = regex_end.sub('', html_string)
     else:
         raise PreprocessingError('no closing text tag in %s' % filename)
@@ -110,12 +112,12 @@ class CleanevalProcessor(BaseProcessor):
             
             # validate raw filename names
             if not re.match(r'^\d+.html$', raw_filename):
-                logging.debug('skipping file %s for not matching cleaneval naming convention', raw_filename)
+                logger.debug('skipping file %s for not matching cleaneval naming convention', raw_filename)
                 continue
             
             raw_filename_path = os.path.join(self._dataset_dir, 'raw', raw_filename)
             backup_path = raw_filename_path + '.backup'
-            logging.info('renaming %s to %s', raw_filename, raw_filename + '.backup')
+            logger.info('renaming %s to %s', raw_filename, raw_filename + '.backup')
             os.rename(raw_filename_path, backup_path)
     
     def generate_meta_data(self):
@@ -160,7 +162,7 @@ class CleanevalProcessor(BaseProcessor):
                 else:
                     safe_encoding = codec.name
                     
-                logging.info('generating meta data for %s', raw_filename)
+                logger.info('generating meta data for %s', raw_filename)
                 meta_data_list.append(dict(
                     url = None,
                     raw_encoding = safe_encoding,
@@ -185,7 +187,7 @@ class CleanevalProcessor(BaseProcessor):
         for raw_filename in self._raw_filenames():
             # validate raw filename names
             if not re.match(r'^\d+.html.backup$', raw_filename):
-                logging.debug('skipping file %s during preprocessing', raw_filename)
+                logger.debug('skipping file %s during preprocessing', raw_filename)
                 continue
             
             with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
@@ -194,17 +196,17 @@ class CleanevalProcessor(BaseProcessor):
                 soup = BeautifulSoup(html_string)
                 if (not soup.find('html')) and (not soup.find('body')):
                     # no html no body tag
-                    logging.warn('appending body and html tags to %s', raw_filename)
+                    logger.warn('appending body and html tags to %s', raw_filename)
                     html_string = '<html><body>  %s  </body></html>' % html_string
                     
                 elif (not soup.find('html')) or (not soup.find('body')):
                     # really weird case
                     raise PreprocessingError('this file has html tag or body tag but not both') 
                 else:
-                    logging.info('no tag appending on %s', raw_filename)
+                    logger.info('no tag appending on %s', raw_filename)
                 
                 output_filename = raw_filename.replace('.backup','')
-                logging.debug('preprocesing complete: %s ---> %s',raw_filename,output_filename)
+                logger.debug('preprocesing complete: %s ---> %s',raw_filename,output_filename)
                 with open(os.path.join(self._dataset_dir, 'raw', output_filename) ,'w') as output:
                     output.write(html_string)
                     
@@ -220,6 +222,7 @@ def main():
     parser.add_argument('dataset_type', choices = ['cleaneval','gogole-news'], help = 'dataset type e.g. cleaneval' )# only cleaneval choice for now
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-p','--path', help = 'path to the meta data output file and .log file (uses the default path if not provided)')
+    parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
     args = parser.parse_args()
     
     # get the ouput direcotry - this is where the .yaml and .log file will reside
@@ -228,6 +231,13 @@ def main():
     # now we can initialize logging
     print 'log: %s' % os.path.join(output_dir, 'preproc.log')
     logging.basicConfig(filename= os.path.join(output_dir, 'preproc.log'), level=logging.DEBUG)
+    
+    # add a console handler to root logger if user provides a --verbose flag
+    if args.verbose:
+        console = logging.StreamHandler()
+        formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+        console.setFormatter(formatter)
+        logging.getLogger().addHandler(console)
     
     if args.dataset_type == 'cleaneval':
         processor = CleanevalProcessor(output_dir, args.dataset_name)
