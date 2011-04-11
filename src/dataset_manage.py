@@ -91,12 +91,15 @@ def _remove_text_tag(html_string, filename):
     
     return html_string
 
-class CleanevalProcessor(object):
+class BaseProcessor(object):
     
     def __init__(self, output_dir, dataset_name):   
         self._dataset_dir = os.path.join(settings.PATH_LOCAL_DATA,'datasets',dataset_name)
         self._output_dir = output_dir
-        
+    
+
+class CleanevalProcessor(BaseProcessor):
+    
     def _raw_filenames(self):       
         return os.listdir(os.path.join(self._dataset_dir, 'raw')) 
     
@@ -204,12 +207,17 @@ class CleanevalProcessor(object):
                 logging.debug('preprocesing complete: %s ---> %s',raw_filename,output_filename)
                 with open(os.path.join(self._dataset_dir, 'raw', output_filename) ,'w') as output:
                     output.write(html_string)
+                    
+class GooglenewsProcessor(BaseProcessor):
+    
+    def generate_meta_data(self):
+        pass
                 
         
 def main():
     # sys argument parsing trough argparse
     parser = argparse.ArgumentParser(description = 'Tool for generating meta data files and cleanup preprocessing regarding datasets')
-    parser.add_argument('dataset_type', choices = ['cleaneval'], help = 'dataset type e.g. cleaneval' )# only cleaneval choice for now
+    parser.add_argument('dataset_type', choices = ['cleaneval','gogole-news'], help = 'dataset type e.g. cleaneval' )# only cleaneval choice for now
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-p','--path', help = 'path to the meta data output file and .log file (uses the default path if not provided)')
     args = parser.parse_args()
@@ -238,6 +246,10 @@ def main():
             print 'PREPROCESSING ERROR:'
             print e
             sys.exit(-1)
+    elif args.dataset_type == 'google-news':
+        processor = GooglenewsProcessor()
+        #TODO
+        
     print '[DONE]'
     
     
