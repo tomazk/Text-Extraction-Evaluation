@@ -225,9 +225,10 @@ class CleanevalProcessor(BaseProcessor):
       
             # validate raw names
             if not re.match(r'^\d+.html.backup$', raw_filename):
-                raise MetaGeneratorError('Raw filename backup not matching [number].html.backup: %s' % raw_filename)
+                continue
             
             with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
+                html_string = f.read()
                 
                 # check for an existing clean file counterpart
                 clean_filename = raw_filename.replace('.html.backup', '') + '-cleaned.txt'
@@ -235,7 +236,7 @@ class CleanevalProcessor(BaseProcessor):
                     raise MetaGeneratorError('No existing clean file counterpart for %s' % raw_filename)
                 
                 # get meta data from <text ...> tag
-                soup = BeautifulSoup(f.read())
+                soup = BeautifulSoup(html_string)
                 text_tag = soup.find('text')
                 if text_tag == None:
                     raise MetaGeneratorError('No <text> tag in %s' % raw_filename)
@@ -253,13 +254,12 @@ class CleanevalProcessor(BaseProcessor):
                 
                 # get a safe encoding name
                 try:
-                    codec = codecs.lookup(encoding)
-                except LookupError:
-                    # FIXME: if this fails chardet should be used
-                    safe_encoding = None
-                else:
-                    safe_encoding = codec.name
-                    
+                    safe_encoding = _get_safe_encoding_name(encoding)
+                except MetaGeneratorError:
+                    det = chardet.detect(html_string)
+                    safe_encoding = _get_safe_encoding_name(det['encoding'])
+                    logger.info('detected encoding %s in %s with confidence %f', safe_encoding, raw_filename, det['confidence'] )
+
                 logger.debug('generating meta data for %s', raw_filename)
                 self.meta_data_list.append(dict(
                     url = None,
