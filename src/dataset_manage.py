@@ -23,18 +23,24 @@ import codecs
 import logging
 
 import yaml
-from BeautifulSoup import BeautifulSoup
 import argparse
+import chardet
+from BeautifulSoup import BeautifulSoup
 
 import settings
 
+# module logger
 logger = logging.getLogger()
+
+# exceptions
 
 class MetaGeneratorError(Exception):
     pass
 
 class PreprocessingError(Exception):
     pass
+
+# private helpers
     
 def _verify_args(args):
     # verify arguments provoded by argparse and
@@ -93,17 +99,110 @@ def _remove_text_tag(html_string, filename):
     
     return html_string
 
+def _get_charset(html_string, raw_filename):
+    # based on a string that represents the html document
+    # get the charset from the meta http-equiv tag e.g.:
+    # <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    # or html5 <meta charset="UTF-8" />
+    # return None if no such tag was found
+    # raw_filename is used only for logging
+    charset = None
+    
+    soup = BeautifulSoup(html_string)
+    r_ct = re.compile('[C|c]ontent-[T|t]ype|CONTENT-TYPE')
+    r_cont = re.compile('\s*text\s*/\s*html\s*;\s*charset\s*=\s*(?P<charset>[a-zA-Z0-9_-]+)')
+    
+    for tag in soup.findAll('meta'):
+        
+        if tag.has_key('http-equiv') and tag.has_key('content') and r_ct.match(tag['content']):
+            content = tag['content'].lower()
+            match = r_cont(content)
+            if match:
+                charset = match.group('charset')
+                logger.debug('charset %s found via meta http-equiv in %s', charset, raw_filename)
+            else:
+                logger.warn('meta http-equiv exists but it does not match the content regex in %s: %s', raw_filename, str(tag))
+        
+        elif tag.has_key('http-equiv') and not tag.has_key('content'):
+            logger.warn('no content attribute in meta http-equiv tag in %s: %s', raw_filename, str(tag))
+        
+        elif tag.has_key('charset'):
+            charset = tag['charset']
+            logger.info('charset %s found via meta charset (html5 style) in %s', charset, raw_filename)
+        
+    if not charset:
+        logger.debug('no meta tag with charset definition in %s', raw_filename)
+            
+    return charset
+
+def _get_safe_encoding_name(encoding):
+    try:
+        codec = codecs.lookup(encoding)
+    except LookupError:
+        raise MetaGeneratorError('no safe encoding name is found for %s' % encoding)
+    else:
+        return codec.name
+    
+# dataset specific processor classes
+
 class BaseProcessor(object):
     
     def __init__(self, output_dir, dataset_name):   
         self._dataset_dir = os.path.join(settings.PATH_LOCAL_DATA,'datasets',dataset_name)
         self._output_dir = output_dir
-    
-
-class CleanevalProcessor(BaseProcessor):
+        self.meta_data_list = [] # list to be serialized
     
     def _raw_filenames(self):       
         return os.listdir(os.path.join(self._dataset_dir, 'raw')) 
+    
+    def _clean_filenames(self):
+        return os.listdir(os.path.join(self._dataset_dir, 'clean'))
+    
+    def _serialize_meta_data(self):
+        with open(os.path.join(self._output_dir, 'meta.yaml'), 'w') as meta_file:
+            meta_string = yaml.dump(self.meta_data_list, default_flow_style=False) 
+            meta_file.write(meta_string)
+    
+    
+class GooglenewsProcessor(BaseProcessor):
+    
+    def generate_meta_data(self):
+        for raw_filename in self._raw_filenames():
+            with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
+                # check for cleaned file counterpart
+                if not os.path.exists(os.path.join(self._dataset_dir, 'clean', raw_filename )):
+                    raise MetaGeneratorError('No existing clean file counterpart for %s' % raw_filename)
+                
+                html_string = f.read()
+                
+                charset = _get_charset(html_string, raw_filename)
+                confidence = None
+                # if no charset is retrieved with document parsing
+                # use chardet library to detect encoding
+                if charset:
+                    raw_encoding = charset
+                else:
+                    det = chardet.detect(html_string)
+                    raw_encoding = det['encoding']
+                    confidence =  det['confidence']
+                    logger.debug('detected encoding %s in %s with confidence %f', raw_encoding, raw_filename, confidence)
+                    
+                safe_raw_encoding = _get_safe_encoding_name(raw_encoding)
+                
+                self.meta_data_list.append(dict(
+                    url = None,
+                    raw_encoding = safe_raw_encoding,
+                    clean_encoding = safe_raw_encoding, # TODO: must verify if this is allways true
+                    raw = raw_filename, 
+                    clean = raw_filename,
+                    meta = {'encoding_confidence': confidence}
+                ))
+        
+        # dump meta data
+        self._serialize_meta_data()
+                    
+              
+class CleanevalProcessor(BaseProcessor):
     
     def create_backups(self):
         # rename every unprocessed [number].html to [number].html.backup 
@@ -121,8 +220,6 @@ class CleanevalProcessor(BaseProcessor):
             os.rename(raw_filename_path, backup_path)
     
     def generate_meta_data(self):
-        
-        meta_data_list = [] # list to be serialized
         
         for raw_filename in self._raw_filenames():
       
@@ -158,12 +255,13 @@ class CleanevalProcessor(BaseProcessor):
                 try:
                     codec = codecs.lookup(encoding)
                 except LookupError:
+                    # FIXME: if this fails chardet should be used
                     safe_encoding = None
                 else:
                     safe_encoding = codec.name
                     
-                logger.info('generating meta data for %s', raw_filename)
-                meta_data_list.append(dict(
+                logger.debug('generating meta data for %s', raw_filename)
+                self.meta_data_list.append(dict(
                     url = None,
                     raw_encoding = safe_encoding,
                     # acording to anotation guidelines of cleaneval 
@@ -174,11 +272,9 @@ class CleanevalProcessor(BaseProcessor):
                     clean = clean_filename,
                     meta = cleaneval_specific
                 ))
+        # dump meta data into meta.yaml
+        self._serialize_meta_data()
                 
-        # dump meta data
-        with open(os.path.join(self._output_dir, 'meta.yaml'), 'w') as meta_file:
-            meta_string = yaml.dump(meta_data_list, default_flow_style=False) 
-            meta_file.write(meta_string)
             
     def preprocess(self):
         # remove all <text> tags
@@ -209,17 +305,12 @@ class CleanevalProcessor(BaseProcessor):
                 logger.debug('preprocesing complete: %s ---> %s',raw_filename,output_filename)
                 with open(os.path.join(self._dataset_dir, 'raw', output_filename) ,'w') as output:
                     output.write(html_string)
-                    
-class GooglenewsProcessor(BaseProcessor):
-    
-    def generate_meta_data(self):
-        pass
                 
-        
+                
 def main():
     # sys argument parsing trough argparse
     parser = argparse.ArgumentParser(description = 'Tool for generating meta data files and cleanup preprocessing regarding datasets')
-    parser.add_argument('dataset_type', choices = ['cleaneval','gogole-news'], help = 'dataset type e.g. cleaneval' )# only cleaneval choice for now
+    parser.add_argument('dataset_type', choices = ['cleaneval','google-news'], help = 'dataset type e.g. cleaneval' )# only cleaneval choice for now
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-p','--path', help = 'path to the meta data output file and .log file (uses the default path if not provided)')
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
@@ -237,6 +328,7 @@ def main():
         console = logging.StreamHandler()
         formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
         console.setFormatter(formatter)
+        console.setLevel(logging.DEBUG)
         logging.getLogger().addHandler(console)
     
     if args.dataset_type == 'cleaneval':
@@ -256,14 +348,24 @@ def main():
             print 'PREPROCESSING ERROR:'
             print e
             sys.exit(-1)
+            
     elif args.dataset_type == 'google-news':
-        processor = GooglenewsProcessor()
-        #TODO
+        processor = GooglenewsProcessor(output_dir, args.dataset_name)
+        try:
+            print '[GENERATING META DATA]'
+            processor.generate_meta_data()
         
+        except MetaGeneratorError as e:
+            print 'META DATA RELATED ERROR:'
+            print e
+            sys.exit(-1)
+        except PreprocessingError as e:
+            print 'PREPROCESSING ERROR:'
+            print e
+            sys.exit(-1)
+            
     print '[DONE]'
     
     
 if __name__ == '__main__':
     main()
-
-

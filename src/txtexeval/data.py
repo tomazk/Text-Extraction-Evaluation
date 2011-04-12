@@ -61,6 +61,7 @@ class LocalDocument(BaseDocument):
         
         # choosing utf-8 if no encoding is provided is based on the observation 
         # that only ascii chars are used in such files e.g. CleanEval 
+        # FIXME: this was not a good idea - do this during meta data generation
         self.raw_encoding = kwargs.pop('raw_encoding') or 'utf-8'
         self.clean_encoding = kwargs.pop('clean_encoding') or 'utf-8'
         
