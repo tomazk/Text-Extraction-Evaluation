@@ -17,27 +17,34 @@ class BaseExtractor(object):
     should raise a NotImpelemntedError for the respective
     method'''
     
-    NAME = ''# unique name 
+    NAME = ''# unique name
+    SLUG = ''# unique slug name ([a-z_]+)
     
     def __init__(self, data_instance):
         self.data_instance = data_instance
         
+    def extract(self):
+        '''Returns unformatted extractor resposne'''
+        pass
+        
     def extract_text(self):
+        '''Returns the cleaned text'''
         pass
     
     def extract_html(self):
+        '''Returns the cleaned html'''
         pass
     
 class BoilerpipeDefaultExtractor(BaseExtractor):
     '''Boilerpipe default extractor '''
     
     NAME = 'Boilerpipe DEF'
+    SLUG = 'boilerpipe_def'
     
     __extractor_type = 'default'
     
-    def extract_text(self):
+    def extract(self):
         html = self.data_instance.get_raw_html()
-        
         req = Request(
             settings.BOILERPIPE_API_ENDPOINT,
             data = {
@@ -49,9 +56,12 @@ class BoilerpipeDefaultExtractor(BaseExtractor):
         res = req.post()
 
         if not res.success():
-            raise ExtractorError(res.err_msg)
+            raise ExtractorError(res.err_msg)        
+        return res.content
         
-        response_content = json.loads(res.content)
+    
+    def extract_text(self):
+        response_content = json.loads(self.extract())
         if response_content['status'] == "ERROR":
             raise ExtractorError(response_content['errorMsg'].encode('utf-8'))
         
@@ -64,6 +74,7 @@ class BoilerpipeArticleExtractor(BoilerpipeDefaultExtractor):
     '''Boilerpipe article extractor'''
     
     NAME = 'Boilerpipe ART'
+    SLUG = 'boilerpipe_art'
     
     __extractor_type = 'article'
     
@@ -72,10 +83,10 @@ class GooseExtractor(BaseExtractor):
     '''Goose project extractor'''
     
     NAME = 'Goose'
+    SLUG = 'goose'
     
-    def extract_text(self):
+    def extract(self):
         html = self.data_instance.get_raw_html()
-        
         req = Request(
             settings.GOOSE_API_ENDPOINT,
             data = dict(rawHtml = html),
@@ -85,8 +96,11 @@ class GooseExtractor(BaseExtractor):
 
         if not res.success():
             raise ExtractorError(res.err_msg)
+        return res.content
+    
+    def extract_text(self):
         
-        response_content = json.loads(res.content)
+        response_content = json.loads(self.extract())
         if response_content['status'] == "ERROR":
             raise ExtractorError(response_content['errorMsg'].encode('utf-8'))
         
@@ -99,14 +113,10 @@ class MSSExtractor(BaseExtractor):
     '''MSS implementation by Jeffrey Pasternack'''
     
     NAME = 'MSS'
+    SLUG = 'mss'
     
-    def extract_text(self):
-        soup = BeautifulSoup(self.extract_html().encode('utf-8'), fromEncoding = 'utf-8')
-        return ' '.join([tag.text for tag in soup.findAll(recursive=True)])
-    
-    def extract_html(self):
+    def extract(self):
         html = self.data_instance.get_raw_html()
-        
         req = Request(
             dict(settings.MSS_URL)['text'],
             #this implementation requires utf-8 encoded input
@@ -117,34 +127,41 @@ class MSSExtractor(BaseExtractor):
         
         if not res.success():
             raise ExtractorError(res.err_msg)
+        return res.content
         
-        return unicode(res.content, encoding = 'utf-8')
+    def extract_text(self):
+        soup = BeautifulSoup(self.extract_html().encode('utf-8'), fromEncoding = 'utf-8')
+        return ' '.join([tag.text for tag in soup.findAll(recursive=True)])
+    
+    def extract_html(self):
+        return unicode(self.extract(), encoding = 'utf-8')
     
 class PythonReadabilityExtractor(BaseExtractor):
     '''Extractor based on python-readability 
     (https://github.com/gfxmonk/python-readability)'''
     
     NAME = 'Python Readability'
+    SLUG = 'python_read'
     
-    def _get_summary(self):
+    def extract(self):
         html = self.data_instance.get_raw_html()
-        
         doc = readability.Document(html)
         return doc.summary()
         
     def extract_text(self):
-        soup = BeautifulSoup(self._get_summary())
+        soup = BeautifulSoup(self.extract())
         return ' '.join([tag.text for tag in soup.findAll(recursive=True)])
     
     def extract_html(self):
-        return self._get_summary()
+        return self.extract()
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
     
     NAME = 'Alchemy API'
+    NAME = 'alchemy'
     
-    def extract_text(self):
+    def extract(self):
         html = self.data_instance.get_raw_html()
         
         req = Request(
@@ -156,16 +173,19 @@ class AlchemyExtractor(BaseExtractor):
             
         )
         res = req.post()
-        
-        response_content = json.loads(res.content, encoding = 'utf8')
         if not res.success():
             raise ExtractorError(res.err_msg)
-        if response_content['status'] == 'ERROR':
-            raise ExtractorError(response_content['statusInfo'].encode('utf8'))
         
+        self._response_content = json.loads(res.content, encoding = 'utf8')
+        if self._response_content['status'] == 'ERROR':
+            raise ExtractorError(self._response_content['statusInfo'].encode('utf8'))
+        return res.content
+        
+    def extract_text(self):
+        self.extract()
         # dump all meta-data in the response and return the extracted text
         # Alchemy API ensures utf-8 encoding for every response 
-        return response_content['text']
+        return self._response_content['text']
     
     def extract_html(self):
         raise NotImplementedError
