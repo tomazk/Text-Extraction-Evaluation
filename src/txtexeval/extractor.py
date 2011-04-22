@@ -189,6 +189,14 @@ class AlchemyExtractor(BaseExtractor):
     
     def extract_html(self):
         raise NotImplementedError
-        
     
+# list of all extractor classes         
+extractor_list = (
+    BoilerpipeArticleExtractor,
+    BoilerpipeDefaultExtractor,
+    GooseExtractor,
+    MSSExtractor,
+    PythonReadabilityExtractor,
+    AlchemyExtractor,
+)
     
