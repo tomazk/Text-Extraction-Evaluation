@@ -58,12 +58,8 @@ class LocalDocument(BaseDocument):
         self.raw_filename = kwargs.pop('raw')
         self.clean_filename = kwargs.pop('clean')
         self.url = kwargs.pop('url')
-        
-        # choosing utf-8 if no encoding is provided is based on the observation 
-        # that only ascii chars are used in such files e.g. CleanEval 
-        # FIXME: this was not a good idea - do this during meta data generation
-        self.raw_encoding = kwargs.pop('raw_encoding') or 'utf-8'
-        self.clean_encoding = kwargs.pop('clean_encoding') or 'utf-8'
+        self.raw_encoding = kwargs.pop('raw_encoding')
+        self.clean_encoding = kwargs.pop('clean_encoding')
         
         
     def get_raw_html(self):
@@ -91,6 +87,5 @@ class LocalDocument(BaseDocument):
                                  )
         with codecs.open(file_path, 'r', encoding =  self.clean_encoding, errors = 'ignore') as f:
             return CleanEvalFormat(f.read())
-             
-        
+     
         
