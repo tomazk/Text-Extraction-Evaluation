@@ -1,5 +1,10 @@
+import os
 import urllib
 import urllib2
+
+import settings
+
+# urllib wrappers
 
 class _Response(object):
     
@@ -54,3 +59,10 @@ class Request(object):
             return _Response(err_msg = str(e.reason))
         else:
             return _Response(r.code, r.headers, r.read())
+        
+# dataset helpers
+
+def check_local_dataset(dataset_name):
+    return os.path.exists( 
+            os.path.join(settings.PATH_LOCAL_DATA, 'datasets', dataset_name)
+    )
