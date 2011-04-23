@@ -1,13 +1,22 @@
-import json
-
 import readability
-from BeautifulSoup import BeautifulSoup
 
 import settings
 from .util import Request
 
 class ExtractorError(Exception):
     pass
+
+def check_response(extract):
+    '''
+    DRY decorator that wraps the extract method. We check for response
+    success and raise the appropriate error or return the content.
+    '''
+    def wrapper(self):
+        response = extract(self)
+        if not response.success():
+            raise ExtractorError(response.err_msg)        
+        return response.content
+    return wrapper
 
 class BaseExtractor(object):
     '''Extractor base class
@@ -19,6 +28,7 @@ class BaseExtractor(object):
     
     NAME = ''# unique name
     SLUG = ''# unique slug name ([a-z_]+)
+    FORMAT = ''# txt|html|json|xml
     
     def __init__(self, data_instance):
         self.data_instance = data_instance
@@ -26,23 +36,17 @@ class BaseExtractor(object):
     def extract(self):
         '''Returns unformatted extractor resposne'''
         pass
-        
-    def extract_text(self):
-        '''Returns the cleaned text'''
-        pass
-    
-    def extract_html(self):
-        '''Returns the cleaned html'''
-        pass
     
 class BoilerpipeDefaultExtractor(BaseExtractor):
     '''Boilerpipe default extractor '''
     
     NAME = 'Boilerpipe DEF'
     SLUG = 'boilerpipe_def'
+    FORMAT = 'json'
     
     __extractor_type = 'default'
     
+    @check_response
     def extract(self):
         html = self.data_instance.get_raw_html()
         req = Request(
@@ -53,28 +57,15 @@ class BoilerpipeDefaultExtractor(BaseExtractor):
             },
             headers = {'Content-Type':'application/x-www-form-urlencoded'}
         )
-        res = req.post()
-
-        if not res.success():
-            raise ExtractorError(res.err_msg)        
-        return res.content
+        return req.post()
         
-    
-    def extract_text(self):
-        response_content = json.loads(self.extract())
-        if response_content['status'] == "ERROR":
-            raise ExtractorError(response_content['errorMsg'].encode('utf-8'))
-        
-        return response_content['result']
-    
-    def extract_html(self):
-        raise NotImplementedError
     
 class BoilerpipeArticleExtractor(BoilerpipeDefaultExtractor):
     '''Boilerpipe article extractor'''
     
     NAME = 'Boilerpipe ART'
     SLUG = 'boilerpipe_art'
+    FORMAT = 'json'
     
     __extractor_type = 'article'
     
@@ -84,7 +75,9 @@ class GooseExtractor(BaseExtractor):
     
     NAME = 'Goose'
     SLUG = 'goose'
+    FORMAT = 'json'
     
+    @check_response
     def extract(self):
         html = self.data_instance.get_raw_html()
         req = Request(
@@ -92,29 +85,17 @@ class GooseExtractor(BaseExtractor):
             data = dict(rawHtml = html),
             headers = {'Content-Type':'application/x-www-form-urlencoded'}
         )
-        res = req.post()
+        return req.post()
 
-        if not res.success():
-            raise ExtractorError(res.err_msg)
-        return res.content
-    
-    def extract_text(self):
-        
-        response_content = json.loads(self.extract())
-        if response_content['status'] == "ERROR":
-            raise ExtractorError(response_content['errorMsg'].encode('utf-8'))
-        
-        return response_content['result']
-    
-    def extract_html(self):
-        raise NotImplementedError
     
 class MSSExtractor(BaseExtractor):
     '''MSS implementation by Jeffrey Pasternack'''
     
     NAME = 'MSS'
     SLUG = 'mss'
+    FORMAT = 'html'
     
+    @check_response
     def extract(self):
         html = self.data_instance.get_raw_html()
         req = Request(
@@ -123,18 +104,7 @@ class MSSExtractor(BaseExtractor):
             data = html.encode('utf-8'),
             headers= {'Content-Type': 'text/plain;charset=UTF-8'}
         )
-        res = req.post()
-        
-        if not res.success():
-            raise ExtractorError(res.err_msg)
-        return res.content
-        
-    def extract_text(self):
-        soup = BeautifulSoup(self.extract_html().encode('utf-8'), fromEncoding = 'utf-8')
-        return ' '.join([tag.text for tag in soup.findAll(recursive=True)])
-    
-    def extract_html(self):
-        return unicode(self.extract(), encoding = 'utf-8')
+        return req.post()
     
 class PythonReadabilityExtractor(BaseExtractor):
     '''Extractor based on python-readability 
@@ -142,28 +112,23 @@ class PythonReadabilityExtractor(BaseExtractor):
     
     NAME = 'Python Readability'
     SLUG = 'python_read'
+    FORMAT = 'html'
     
     def extract(self):
         html = self.data_instance.get_raw_html()
         doc = readability.Document(html)
         return doc.summary()
-        
-    def extract_text(self):
-        soup = BeautifulSoup(self.extract())
-        return ' '.join([tag.text for tag in soup.findAll(recursive=True)])
-    
-    def extract_html(self):
-        return self.extract()
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
     
     NAME = 'Alchemy API'
-    NAME = 'alchemy'
+    SLUG = 'alchemy'
+    FORMAT = 'json'
     
+    @check_response
     def extract(self):
         html = self.data_instance.get_raw_html()
-        
         req = Request(
             'http://access.alchemyapi.com/calls/html/HTMLGetText',
             data = {'apikey':settings.ALCHEMY_API_KEY,
@@ -172,24 +137,8 @@ class AlchemyExtractor(BaseExtractor):
             } 
             
         )
-        res = req.post()
-        if not res.success():
-            raise ExtractorError(res.err_msg)
+        return req.post()
         
-        self._response_content = json.loads(res.content, encoding = 'utf8')
-        if self._response_content['status'] == 'ERROR':
-            raise ExtractorError(self._response_content['statusInfo'].encode('utf8'))
-        return res.content
-        
-    def extract_text(self):
-        self.extract()
-        # dump all meta-data in the response and return the extracted text
-        # Alchemy API ensures utf-8 encoding for every response 
-        return self._response_content['text']
-    
-    def extract_html(self):
-        raise NotImplementedError
-    
 # list of all extractor classes         
 extractor_list = (
     BoilerpipeArticleExtractor,
@@ -199,4 +148,10 @@ extractor_list = (
     PythonReadabilityExtractor,
     AlchemyExtractor,
 )
+
+def get_extractor_cls(extractor_slug):
+    '''Return the extractor class given a slug'''
+    for e in extractor_list:
+        if e.SLUG == extractor_slug: 
+            return e
     

@@ -1,4 +1,5 @@
 import os
+import re
 import urlparse
 import codecs
 
@@ -6,6 +7,17 @@ import yaml
 
 import settings
 from .evaluation import CleanEvalFormat
+from .util import check_local_dataset
+
+class DataError(Exception):
+    pass
+
+def verify_local_dataset(init):
+    def wrapper(self, dataset, *args, **kwargs):
+        if not check_local_dataset(dataset):
+            raise DataError('local dataset %s does not exist' % dataset)
+        init(self, dataset, *args, **kwargs)
+    return wrapper
 
 class BaseDatasetLoader(object):
     '''
@@ -20,9 +32,9 @@ class BaseDatasetLoader(object):
 class LocalDatasetLoader(BaseDatasetLoader):
     '''Dataset loader using local filesystem'''
     
-    def __init__(self, dataset_name):
-        self.dataset_name = dataset_name
-        
+    @verify_local_dataset
+    def __init__(self, dataset_name):     
+        self.dataset = dataset_name   
         # load meta data
         meta_filepath = os.path.join(settings.PATH_LOCAL_DATA, 'datasets', dataset_name, 'meta.yaml')
         with open(meta_filepath, 'r') as f:
@@ -31,7 +43,7 @@ class LocalDatasetLoader(BaseDatasetLoader):
     def __iter__(self):
         '''DataInstance generator'''
         for dict in self.meta_yaml:
-            yield LocalDocument(self.dataset_name, **dict)
+            yield LocalDocument(self.dataset, **dict)
     
 
 class BaseDocument(object):
@@ -87,5 +99,48 @@ class LocalDocument(BaseDocument):
                                  )
         with codecs.open(file_path, 'r', encoding =  self.clean_encoding, errors = 'ignore') as f:
             return CleanEvalFormat(f.read())
-     
         
+class BaseResultStorage(object):
+    
+    def __init__(self, dataset_name, extractor_class):
+        self.dataset =  dataset_name
+        self.extractor_cls = extractor_class
+        
+    def push_result(self, document):
+        pass
+    
+class LocalResultStorage(BaseResultStorage):
+    
+    @verify_local_dataset
+    def __init__(self, dataset_name, extractor_class):
+        super(LocalResultStorage, self).__init__(dataset_name, extractor_class)
+        
+        # with dataset name out of the way, we must now check the existance of
+        # the result folder for the given extractor
+        self._result_dir = os.path.join(
+            settings.PATH_LOCAL_DATA,
+            'datasets',
+            self.dataset,
+            'result')
+        
+        self._extractor_result_dir = os.path.join(
+            self._result_dir,
+            self.extractor_cls.SLUG)
+        
+        if not os.path.exists( self._extractor_result_dir ):
+            os.mkdir(self._extractor_result_dir)
+    
+    def push_result(self, document):
+        extractor = self.extractor_cls(document)
+        result = extractor.extract()
+        
+        output_file = '%s.%s' % (document.raw_filename,self.extractor_cls.FORMAT)
+        with open(os.path.join(self._extractor_result_dir, output_file), 'w') as out:
+            out.write(result)
+            
+    @property        
+    def log_path(self):
+        return os.path.join(
+            self._result_dir,
+            '%s.log' % self.extractor_cls.SLUG
+        )
