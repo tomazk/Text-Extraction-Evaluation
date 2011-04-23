@@ -6,7 +6,7 @@ from .util import Request
 class ExtractorError(Exception):
     pass
 
-def check_response(extract):
+def return_content(extract):
     '''
     DRY decorator that wraps the extract method. We check for response
     success and raise the appropriate error or return the content.
@@ -46,7 +46,7 @@ class BoilerpipeDefaultExtractor(BaseExtractor):
     
     __extractor_type = 'default'
     
-    @check_response
+    @return_content
     def extract(self):
         html = self.data_instance.get_raw_html()
         req = Request(
@@ -77,7 +77,7 @@ class GooseExtractor(BaseExtractor):
     SLUG = 'goose'
     FORMAT = 'json'
     
-    @check_response
+    @return_content
     def extract(self):
         html = self.data_instance.get_raw_html()
         req = Request(
@@ -95,7 +95,7 @@ class MSSExtractor(BaseExtractor):
     SLUG = 'mss'
     FORMAT = 'html'
     
-    @check_response
+    @return_content
     def extract(self):
         html = self.data_instance.get_raw_html()
         req = Request(
@@ -126,7 +126,7 @@ class AlchemyExtractor(BaseExtractor):
     SLUG = 'alchemy'
     FORMAT = 'json'
     
-    @check_response
+    @return_content
     def extract(self):
         html = self.data_instance.get_raw_html()
         req = Request(
