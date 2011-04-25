@@ -47,9 +47,12 @@ def logging_setup(verbose, output_path):
     '''Set verbose to True if you want the log to appear on stderr'''
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
+    
     file = logging.FileHandler(filename = output_path)
     file.setLevel(logging.INFO)
+    file.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
     logger.addHandler(file)
+    
     if verbose:
         console = logging.StreamHandler()
         console.setLevel(logging.DEBUG)

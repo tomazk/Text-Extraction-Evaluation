@@ -82,7 +82,7 @@ class GooseExtractor(BaseExtractor):
         html = self.data_instance.get_raw_html()
         req = Request(
             settings.GOOSE_API_ENDPOINT,
-            data = dict(rawHtml = html),
+            data = dict(rawHtml = html.encode(self.data_instance.raw_encoding)),
             headers = {'Content-Type':'application/x-www-form-urlencoded'}
         )
         return req.post()
@@ -117,7 +117,8 @@ class PythonReadabilityExtractor(BaseExtractor):
     def extract(self):
         html = self.data_instance.get_raw_html()
         doc = readability.Document(html)
-        return doc.summary()
+        # FIXME
+        return doc.summary().encode('ascii','ignore')
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
