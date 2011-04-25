@@ -119,6 +119,26 @@ class PythonReadabilityExtractor(BaseExtractor):
         doc = readability.Document(html)
         # FIXME
         return doc.summary().encode('ascii','ignore')
+    
+    
+class NodeReadabilityExtractor(BaseExtractor):
+    '''Extractor based on node-readability'''
+    
+    NAME = 'Node Readability'
+    SLUG = 'node_read'
+    FORMAT = 'json'
+    
+    @return_content
+    def extract(self):
+        html = self.data_instance.get_raw_html()
+        
+        req = Request(
+            settings.READABILITY_ENDPOINT,
+            #this implementation requires utf-8 encoded input
+            data = html.encode('utf-8'),
+            headers= {'Content-Type': 'text/plain;charset=UTF-8'}
+        )
+        return req.post() 
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
@@ -147,6 +167,7 @@ extractor_list = (
     GooseExtractor,
     MSSExtractor,
     PythonReadabilityExtractor,
+    NodeReadabilityExtractor,
     AlchemyExtractor,
 )
 
