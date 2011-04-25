@@ -62,7 +62,10 @@ class Request(object):
         
 # dataset helpers
 
-def check_local_dataset(dataset_name):
+def check_local_path(*args):
     return os.path.exists( 
-            os.path.join(settings.PATH_LOCAL_DATA, 'datasets', dataset_name)
+            os.path.join(settings.PATH_LOCAL_DATA, 'datasets', *args)
     )
+    
+def get_local_path(*args):
+    return os.path.join(settings.PATH_LOCAL_DATA, 'datasets', *args)

@@ -7,9 +7,7 @@ import logging
 import argparse
 
 from txtexeval.extractor import get_extractor_cls, extractor_list
-from txtexeval.extractor import ExtractorError
 from txtexeval.data import LocalDatasetLoader, LocalResultStorage
-from txtexeval.data import DataError
 
 logger = logging.getLogger()
 
@@ -26,6 +24,8 @@ def local_extract(dataset_name, extractor_slug, verbose = False):
     for doc in loader:
         storage.push_result(doc)
         logger.debug('extracted content from %s', doc.raw_filename)
+        
+    storage.dump_summary()
     logger.info('finished with %s dataset', dataset_name)
     
 def parse_args():
@@ -47,26 +47,20 @@ def logging_setup(verbose, output_path):
     '''Set verbose to True if you want the log to appear on stderr'''
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-    logger.addHandler(logging.FileHandler(filename = output_path))
+    file = logging.FileHandler(filename = output_path)
+    file.setLevel(logging.INFO)
+    logger.addHandler(file)
     if verbose:
         console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
         console.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
         logger.addHandler(console)
 
 def main():
     args = parse_args()
     
-    try:
-        local_extract(args.dataset_name, args.extractor, args.verbose)
-    except DataError as e:
-        print 'Data related error: %s' % e
-        sys.exit(-1)
-    except ExtractorError as e:
-        print 'Extractor related error: %s' % e
-        sys.exit(-1)
-    except Exception as e:
-        print 'Unknown error: %s' % e
-        raise
+    print '[STARTED]'
+    local_extract(args.dataset_name, args.extractor, args.verbose)
     print '[DONE]'
     
 if __name__ == '__main__':

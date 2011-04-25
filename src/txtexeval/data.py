@@ -1,20 +1,23 @@
 import os
-import re
 import urlparse
 import codecs
+import logging
 
 import yaml
 
 import settings
 from .evaluation import CleanEvalFormat
-from .util import check_local_dataset
+from .util import check_local_path, get_local_path
+from .extractor import extractor_list, ExtractorError
+
+logger = logging.getLogger(__name__)
 
 class DataError(Exception):
     pass
 
 def verify_local_dataset(init):
     def wrapper(self, dataset, *args, **kwargs):
-        if not check_local_dataset(dataset):
+        if not check_local_path(dataset):
             raise DataError('local dataset %s does not exist' % dataset)
         init(self, dataset, *args, **kwargs)
     return wrapper
@@ -39,11 +42,15 @@ class LocalDatasetLoader(BaseDatasetLoader):
         meta_filepath = os.path.join(settings.PATH_LOCAL_DATA, 'datasets', dataset_name, 'meta.yaml')
         with open(meta_filepath, 'r') as f:
             self.meta_yaml = yaml.load(f.read())
+            self._len = len(self.meta_yaml)
     
     def __iter__(self):
         '''DataInstance generator'''
         for dict in self.meta_yaml:
             yield LocalDocument(self.dataset, **dict)
+            
+    def __len__(self):
+        self._len
     
 
 class BaseDocument(object):
@@ -109,6 +116,51 @@ class BaseResultStorage(object):
     def push_result(self, document):
         pass
     
+    
+class ExtractionSummary(object):
+    
+    @verify_local_dataset
+    def __init__(self, dataset_name, extractor_slug = None):
+        self._summary_path = get_local_path(dataset_name,'result', 'summary.yaml')
+        
+        if os.path.exists(self._summary_path):
+            with open(self._summary_path,'r') as f:
+                self._summary_structure = yaml.load(f.read())
+        else:
+            self._summary_structure = {} 
+            for e in extractor_list:
+                self._summary_structure[e.SLUG] = []
+                
+        self.extractor_slug = extractor_slug
+        self._summary_structure[self.extractor_slug] = []
+        
+    def set_extractor(self, extractor_slug):
+        self.extractor_slug = extractor_slug
+        self._summary_structure[self.extractor_slug] = []
+        
+    def add_fail(self, id, reason = None):
+        if self.extractor_slug == None:
+            raise DataError('extractor not set')
+        
+        self._summary_structure[self.extractor_slug].append({
+            'id': id,
+            'reason': reason
+        })
+        
+    def serialize(self):
+        with open(self._summary_path, 'w') as out:
+            out.write(yaml.dump(self._summary_structure, default_flow_style=False ))
+    
+    def short_summary(self, extractor_slug = None):
+        if extractor_slug:
+            return 'extraction summary: %i failed' \
+               % len(self._summary_structure[extractor_slug])
+        elif self.extractor_slug: 
+            return 'extraction summary: %i failed' \
+               % len(self._summary_structure[self.extractor_slug])
+        else:
+            raise DataError('extractor not set')
+        
 class LocalResultStorage(BaseResultStorage):
     
     @verify_local_dataset
@@ -117,11 +169,7 @@ class LocalResultStorage(BaseResultStorage):
         
         # with dataset name out of the way, we must now check the existance of
         # the result folder for the given extractor
-        self._result_dir = os.path.join(
-            settings.PATH_LOCAL_DATA,
-            'datasets',
-            self.dataset,
-            'result')
+        self._result_dir = get_local_path( self.dataset,'result')
         
         self._extractor_result_dir = os.path.join(
             self._result_dir,
@@ -129,14 +177,32 @@ class LocalResultStorage(BaseResultStorage):
         
         if not os.path.exists( self._extractor_result_dir ):
             os.mkdir(self._extractor_result_dir)
-    
+            
+        # create an object to be serialized into a .yaml file
+        # we need this to store a summary of the extraction process for the 
+        # whole dataset
+        self._summary = ExtractionSummary(self.dataset, self.extractor_cls.SLUG)
+        
     def push_result(self, document):
         extractor = self.extractor_cls(document)
-        result = extractor.extract()
-        
-        output_file = '%s.%s' % (document.raw_filename,self.extractor_cls.FORMAT)
-        with open(os.path.join(self._extractor_result_dir, output_file), 'w') as out:
-            out.write(result)
+        try:
+            result = extractor.extract()
+        except DataError as e:
+            err_msg = 'Data related error: %s' % e
+            logger.warning(err_msg)
+            self._summary.add_fail(document.raw_filename, err_msg)
+        except ExtractorError as e:
+            err_msg = 'Extractor related error: %s' % e
+            logger.warning(err_msg)
+            self._summary.add_fail(document.raw_filename, err_msg)
+        except Exception as e:
+            err_msg = 'Unknown error: %s' % e
+            logger.warning(err_msg)
+            self._summary.add_fail(document.raw_filename, err_msg)
+        else:
+            output_file = '%s.%s' % (document.raw_filename,self.extractor_cls.FORMAT)
+            with open(os.path.join(self._extractor_result_dir, output_file), 'w') as out:
+                out.write(result)
             
     @property        
     def log_path(self):
@@ -144,3 +210,7 @@ class LocalResultStorage(BaseResultStorage):
             self._result_dir,
             '%s.log' % self.extractor_cls.SLUG
         )
+        
+    def dump_summary(self):
+        logger.info(self._summary.short_summary())
+        self._summary.serialize()

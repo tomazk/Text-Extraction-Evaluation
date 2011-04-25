@@ -28,7 +28,7 @@ import chardet
 from BeautifulSoup import BeautifulSoup
 
 import settings
-from txtexeval.util import check_local_dataset
+from txtexeval.util import check_local_path
 
 # module logger
 logger = logging.getLogger()
@@ -52,7 +52,7 @@ def _verify_args(args):
     print 'dataset name: %s' % args.dataset_name
     
     #validate dataset name
-    if not check_local_dataset(args.dataset_name):
+    if not check_local_path(args.dataset_name):
         print 'error: this dataset does not exist'
         sys.exit(-1)
     
