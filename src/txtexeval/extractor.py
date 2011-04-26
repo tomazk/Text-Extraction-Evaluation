@@ -187,7 +187,7 @@ class ExtractivExtractor(BaseExtractor):
     '''Extractiv extractor'''
     
     NAME = 'Extractiv'
-    SLUG = 'extrac'
+    SLUG = 'extractiv'
     FORMAT = 'json'
     
     @return_content
@@ -203,6 +203,21 @@ class ExtractivExtractor(BaseExtractor):
         )
         return req.post()
         
+class RepustateExtractor(BaseExtractor):
+    '''Repustate extractor'''
+    
+    NAME = 'Repustate'
+    SLUG = 'repustate'
+    FORMAT = 'json'
+    
+    @return_content
+    def extract(self):
+        req  = Request(
+            'http://api.repustate.com/v1/%s/clean-html.json' \
+             % settings.REPUSTATE_API_KEY,
+            data = 'url=%s' % self.data_instance.get_url()
+        )
+        return req.get()
         
 # list of all extractor classes         
 extractor_list = (
@@ -215,6 +230,7 @@ extractor_list = (
     AlchemyExtractor,
     DiffbotExtractor,
     ExtractivExtractor,
+    RepustateExtractor,
 )
 
 def get_extractor_cls(extractor_slug):
