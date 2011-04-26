@@ -92,9 +92,10 @@ class LocalDocument(BaseDocument):
             return f.read()
     
     def get_url(self):
-        if self.url: return self.url
+        if self.url: 
+            return self.url
         else:
-            tail = self.dataset + '/raw/' + self.raw_filename
+            tail = self.dataset + '/' + self.raw_filename
             return urlparse.urljoin(settings.PATH_REMOTE_DATA, tail)
         
     def get_result(self):

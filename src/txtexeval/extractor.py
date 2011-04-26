@@ -1,3 +1,5 @@
+import urllib
+
 import readability
 
 import settings
@@ -160,6 +162,27 @@ class AlchemyExtractor(BaseExtractor):
         )
         return req.post()
         
+class DiffbotExtractor(BaseExtractor):
+    '''Diffbot extractor'''
+    
+    NAME = 'Diffbot'
+    SLUG = 'diffbot'
+    FORMAT = 'json'
+    
+    @return_content
+    def extract(self):        
+        data = urllib.urlencode(dict(
+            token = settings.DIFFBOT_API_KEY,
+            url = self.data_instance.get_url(),
+            format = 'json'
+        ))
+        data += '&stats' # use '&html' for html formatted result
+        req = Request(
+            'http://www.diffbot.com/api/article',
+            data = data
+        )
+        return req.get()
+        
 # list of all extractor classes         
 extractor_list = (
     BoilerpipeArticleExtractor,
@@ -169,6 +192,7 @@ extractor_list = (
     PythonReadabilityExtractor,
     NodeReadabilityExtractor,
     AlchemyExtractor,
+    DiffbotExtractor,
 )
 
 def get_extractor_cls(extractor_slug):

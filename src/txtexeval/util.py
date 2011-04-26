@@ -8,7 +8,8 @@ import settings
 
 class _Response(object):
     
-    def __init__(self, status_code = None, headers = None, content = None, err_msg = None):
+    def __init__(self, status_code = None, headers = None, 
+                 content = None, err_msg = None):
         self.status_code = status_code
         self.headers = headers
         self.content = content
@@ -47,7 +48,7 @@ class Request(object):
         try: 
             r = urllib2.urlopen(request)
         except urllib2.URLError as e:
-            return _Response(err_msg = str(e.reason))
+            return _Response(err_msg = str(e))
         else:
             return _Response(r.code, r.headers, r.read())
             
@@ -56,7 +57,7 @@ class Request(object):
         try: 
             r = urllib2.urlopen(request)
         except urllib2.URLError as e:
-            return _Response(err_msg = str(e.reason))
+            return _Response(err_msg = str(e))
         else:
             return _Response(r.code, r.headers, r.read())
         
