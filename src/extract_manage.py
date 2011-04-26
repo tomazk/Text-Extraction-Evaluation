@@ -2,6 +2,7 @@
 Script for extracting article text from dataset instances
 '''
 import sys
+import time
 import logging
 
 import argparse
@@ -11,7 +12,7 @@ from txtexeval.data import LocalDatasetLoader, LocalResultStorage
 
 logger = logging.getLogger()
 
-def local_extract(dataset_name, extractor_slug, verbose = False):
+def local_extract(dataset_name, extractor_slug, verbose = False, timeout = 0):
     # init storage and loader
     ex = get_extractor_cls(extractor_slug)
     storage = LocalResultStorage(dataset_name, ex)
@@ -24,6 +25,8 @@ def local_extract(dataset_name, extractor_slug, verbose = False):
     for doc in loader:
         storage.push_result(doc)
         logger.debug('extracted content from %s', doc.raw_filename)
+        if timeout:
+            time.sleep(timeout)
         
     storage.dump_summary()
     logger.info('finished with %s dataset', dataset_name)
@@ -34,7 +37,7 @@ def parse_args():
     parser.add_argument('extractor', choices = [e.SLUG for e in extractor_list])
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
-    #TODO: parser.add_argument('-m','--missing_only', action = 'store_true')
+    parser.add_argument('-t','--timeout', type=int, help='wait x seconds between extraction operations')
     args = parser.parse_args()
     
     # printing arguments
@@ -63,7 +66,10 @@ def main():
     args = parse_args()
     
     print '[STARTED]'
-    local_extract(args.dataset_name, args.extractor, args.verbose)
+    if args.timeout:
+        local_extract(args.dataset_name, args.extractor, args.verbose, args.timeout)
+    else:
+        local_extract(args.dataset_name, args.extractor, args.verbose)
     print '[DONE]'
     
 if __name__ == '__main__':
