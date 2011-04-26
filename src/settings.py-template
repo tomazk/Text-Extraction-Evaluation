@@ -8,6 +8,7 @@ PATH_REMOTE_DATA = 'http://example.com/data/'
 ALCHEMY_API_KEY = ''
 DIFFBOT_KEY = ''
 REPUSTATE_API_KEY = ''
+EXTRACTIV_API_KEY = ''
 
 #MSS api endpoint provided by Jeffrey Pasternack <jpaster2@illinois.edu>
 #(I'm not allowed to distribute this url)
@@ -21,3 +22,6 @@ BOILERPIPE_API_ENDPOINT = 'http://yourdomain/boilerpipe/extract/'
 
 #Goose API url (https://github.com/tomazk/Java-Text-Extractor-API)
 GOOSE_API_ENDPOINT = 'http://yourdomain/goose/extract/'
+
+#Readability API (https://github.com/tomazk/Simple-Readability-API)
+READABILITY_ENDPOINT = 'http://yourdomain/extract/'

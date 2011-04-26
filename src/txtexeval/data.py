@@ -132,8 +132,8 @@ class ExtractionSummary(object):
             for e in extractor_list:
                 self._summary_structure[e.SLUG] = []
                 
-        self.extractor_slug = extractor_slug
-        self._summary_structure[self.extractor_slug] = []
+        if extractor_slug:
+            self.set_extractor(extractor_slug)
         
     def set_extractor(self, extractor_slug):
         self.extractor_slug = extractor_slug

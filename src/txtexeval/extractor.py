@@ -182,6 +182,27 @@ class DiffbotExtractor(BaseExtractor):
             data = data
         )
         return req.get()
+    
+class ExtractivExtractor(BaseExtractor):
+    '''Extractiv extractor'''
+    
+    NAME = 'Extractiv'
+    SLUG = 'extrac'
+    FORMAT = 'json'
+    
+    @return_content
+    def extract(self):
+        html = self.data_instance.get_raw_html()
+        req = Request(
+            'http://rest.extractiv.com/extractiv/',
+            data = {'api_key':settings.EXTRACTIV_API_KEY,
+                    'content': html.encode(self.data_instance.raw_encoding),
+                    'output_format':'json'
+            } 
+            
+        )
+        return req.post()
+        
         
 # list of all extractor classes         
 extractor_list = (
@@ -193,6 +214,7 @@ extractor_list = (
     NodeReadabilityExtractor,
     AlchemyExtractor,
     DiffbotExtractor,
+    ExtractivExtractor,
 )
 
 def get_extractor_cls(extractor_slug):
