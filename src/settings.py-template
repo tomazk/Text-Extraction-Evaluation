@@ -25,3 +25,9 @@ GOOSE_API_ENDPOINT = 'http://yourdomain/goose/extract/'
 
 #Readability API (https://github.com/tomazk/Simple-Readability-API)
 READABILITY_ENDPOINT = 'http://yourdomain/extract/'
+
+#thrift RPC endpoint provided by Zemanta Ltd
+ZEMANTA_THRIFT = (
+    ('host', ''),
+    ('port', ''),
+)

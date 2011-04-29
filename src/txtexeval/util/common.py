@@ -70,3 +70,16 @@ def check_local_path(*args):
     
 def get_local_path(*args):
     return os.path.join(settings.PATH_LOCAL_DATA, 'datasets', *args)
+
+# others
+
+def execute_only_once(method):
+    '''A decorator that runs a method only once.'''
+    attrname = "_%s_once_result" % id(method)
+    def wrap(self, *args, **kwargs):
+        try:
+            return getattr(self, attrname)
+        except AttributeError:
+            setattr(self, attrname, method(self, *args, **kwargs))
+            return getattr(self, attrname)
+    return wrap

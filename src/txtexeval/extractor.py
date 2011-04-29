@@ -4,6 +4,7 @@ import readability
 
 import settings
 from .util import Request
+from .util.zemanta.client import ClientManager
 
 class ExtractorError(Exception):
     pass
@@ -218,6 +219,24 @@ class RepustateExtractor(BaseExtractor):
             data = 'url=%s' % self.data_instance.get_url()
         )
         return req.get()
+    
+class ZemantaExtractor(BaseExtractor):
+    '''Extractor used internally by Zemanta Ltd'''
+    
+    NAME = 'Zemanta'
+    SLUG = 'zemanta'
+    FORMAT = 'txt'
+    
+    def extract(self):
+        html = self.data_instance.get_raw_html()
+        html = html.encode(self.data_instance.raw_encoding)
+        cm = ClientManager()
+        
+        response = cm.extract(html, self.data_instance.raw_encoding)
+        if response.error:
+            raise ExtractorError(response.error)
+        return response.text
+        
         
 # list of all extractor classes         
 extractor_list = (
@@ -231,6 +250,7 @@ extractor_list = (
     DiffbotExtractor,
     ExtractivExtractor,
     RepustateExtractor,
+    ZemantaExtractor,
 )
 
 def get_extractor_cls(extractor_slug):
