@@ -8,7 +8,7 @@ import yaml
 import settings
 from .evaluation import CleanEvalFormat
 from .util import check_local_path, get_local_path
-from .extractor import extractor_list, ExtractorError
+from .extractor import extractor_list, ExtractorError, ContentExtractorError
 
 logger = logging.getLogger(__name__)
 
@@ -189,15 +189,19 @@ class LocalResultStorage(BaseResultStorage):
         try:
             result = extractor.extract()
         except DataError as e:
-            err_msg = 'Data related error: %s' % e
+            err_msg = 'Data related error: %r' % e
+            logger.warning(err_msg)
+            self._summary.add_fail(document.raw_filename, err_msg)
+        except ContentExtractorError as e:
+            err_msg = 'Content extractor related error: %r' % e
             logger.warning(err_msg)
             self._summary.add_fail(document.raw_filename, err_msg)
         except ExtractorError as e:
-            err_msg = 'Extractor related error: %s' % e
+            err_msg = 'Extractor related error: %r' % e
             logger.warning(err_msg)
             self._summary.add_fail(document.raw_filename, err_msg)
         except Exception as e:
-            err_msg = 'Unknown error: %s' % e
+            err_msg = 'Unknown error: %r' % e
             logger.warning(err_msg)
             self._summary.add_fail(document.raw_filename, err_msg)
         else:

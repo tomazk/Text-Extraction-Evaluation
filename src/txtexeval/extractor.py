@@ -1,4 +1,5 @@
 import urllib
+import json
 
 import readability
 
@@ -7,7 +8,11 @@ from .util import Request
 from .util.zemanta.client import ClientManager
 
 class ExtractorError(Exception):
+    '''Extractor failed on the network layer'''
     pass
+
+class ContentExtractorError(ExtractorError):
+    '''Extractor '''
 
 def return_content(extract):
     '''
@@ -15,10 +20,25 @@ def return_content(extract):
     success and raise the appropriate error or return the content.
     '''
     def wrapper(self):
+        # fetch the response
         response = extract(self)
+        # check for any network related errors
         if not response.success():
-            raise ExtractorError(response.err_msg)        
+            raise ExtractorError(response.err_msg) 
         return response.content
+    return wrapper
+
+def check_content_status(extract):
+    '''
+    DRY decorator that mitigates the trouble of inserting boilerplate code 
+    inside the extract method for invoking the private method _content_status.
+    WhateverExtractor._content_status is used to check for errors returned in
+    the response content itself.
+    '''
+    def wrapper(self):
+        self._content = extract(self)
+        self._content_status()
+        return self._content
     return wrapper
 
 class BaseExtractor(object):
@@ -40,7 +60,14 @@ class BaseExtractor(object):
         '''Returns unformatted extractor resposne'''
         pass
     
-class BoilerpipeDefaultExtractor(BaseExtractor):
+class _JsonResponseCheckMin(object):
+    
+    def _content_status(self):
+        js = json.loads(self._content)
+        if js['status'] == "ERROR":
+            raise ContentExtractorError(js['errorMsg'].encode('utf-8'))
+        
+class BoilerpipeDefaultExtractor(_JsonResponseCheckMin,BaseExtractor):
     '''Boilerpipe default extractor '''
     
     NAME = 'Boilerpipe DEF'
@@ -73,7 +100,7 @@ class BoilerpipeArticleExtractor(BoilerpipeDefaultExtractor):
     __extractor_type = 'article'
     
     
-class GooseExtractor(BaseExtractor):
+class GooseExtractor(_JsonResponseCheckMin,BaseExtractor):
     '''Goose project extractor'''
     
     NAME = 'Goose'
@@ -131,6 +158,7 @@ class NodeReadabilityExtractor(BaseExtractor):
     SLUG = 'node_read'
     FORMAT = 'json'
     
+    @check_content_status
     @return_content
     def extract(self):
         html = self.data_instance.get_raw_html()
@@ -142,6 +170,11 @@ class NodeReadabilityExtractor(BaseExtractor):
             headers= {'Content-Type': 'text/plain;charset=UTF-8'}
         )
         return req.post() 
+    
+    def _content_status(self):
+        js = json.loads(self._content, encoding = 'utf8')
+        if js['status'] == 'ERROR':
+            raise ContentExtractorError('failed')
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
@@ -150,6 +183,7 @@ class AlchemyExtractor(BaseExtractor):
     SLUG = 'alchemy'
     FORMAT = 'json'
     
+    @check_content_status
     @return_content
     def extract(self):
         html = self.data_instance.get_raw_html()
@@ -162,6 +196,12 @@ class AlchemyExtractor(BaseExtractor):
             
         )
         return req.post()
+    
+    def _content_status(self):
+        js = json.loads(self._content, encoding = 'utf8')
+        if js['status'] == 'ERROR':
+            raise ContentExtractorError(js['statusInfo'].encode('utf8'))
+        
         
 class DiffbotExtractor(BaseExtractor):
     '''Diffbot extractor'''
@@ -211,6 +251,7 @@ class RepustateExtractor(BaseExtractor):
     SLUG = 'repustate'
     FORMAT = 'json'
     
+    @check_content_status
     @return_content
     def extract(self):
         req  = Request(
@@ -219,6 +260,11 @@ class RepustateExtractor(BaseExtractor):
             data = 'url=%s' % self.data_instance.get_url()
         )
         return req.get()
+    
+    def _content_status(self):
+        js = json.loads(self._content, encoding = 'utf8')
+        if js['status'] != 'OK':
+            raise ContentExtractorError(js['status'].encode('utf8'))
     
 class ZemantaExtractor(BaseExtractor):
     '''Extractor used internally by Zemanta Ltd'''
