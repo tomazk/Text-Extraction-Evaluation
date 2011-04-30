@@ -12,7 +12,10 @@ class ExtractorError(Exception):
     pass
 
 class ContentExtractorError(ExtractorError):
-    '''Extractor '''
+    '''
+    Raised when the error is included in the content (e.g. json formatted 
+    response has a status field) fetched by the extractor
+    '''
 
 def return_content(extract):
     '''
