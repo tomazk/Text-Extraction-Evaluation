@@ -63,14 +63,14 @@ class BaseExtractor(object):
         '''Returns unformatted extractor resposne'''
         pass
     
-class _JsonResponseCheckMin(object):
+class _ContentCheckMin(object):
     
     def _content_status(self):
         js = json.loads(self._content)
         if js['status'] == "ERROR":
             raise ContentExtractorError(js['errorMsg'].encode('utf-8'))
         
-class BoilerpipeDefaultExtractor(_JsonResponseCheckMin,BaseExtractor):
+class BoilerpipeDefaultExtractor(_ContentCheckMin,BaseExtractor):
     '''Boilerpipe default extractor '''
     
     NAME = 'Boilerpipe DEF'
@@ -103,7 +103,7 @@ class BoilerpipeArticleExtractor(BoilerpipeDefaultExtractor):
     __extractor_type = 'article'
     
     
-class GooseExtractor(_JsonResponseCheckMin,BaseExtractor):
+class GooseExtractor(_ContentCheckMin,BaseExtractor):
     '''Goose project extractor'''
     
     NAME = 'Goose'
