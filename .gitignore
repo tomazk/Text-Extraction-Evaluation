@@ -19,7 +19,4 @@ pip-log.txt
 .tox
 
 # Project specific
-.project
-.pydevproject
-data/*
 src/settings.py
