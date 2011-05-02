@@ -39,7 +39,7 @@ class LocalDatasetLoader(BaseDatasetLoader):
     def __init__(self, dataset_name):     
         self.dataset = dataset_name   
         # load meta data
-        meta_filepath = os.path.join(settings.PATH_LOCAL_DATA, 'datasets', dataset_name, 'meta.yaml')
+        meta_filepath = get_local_path( dataset_name, 'meta.yaml')
         with open(meta_filepath, 'r') as f:
             self.meta_yaml = yaml.load(f.read())
             self._len = len(self.meta_yaml)
@@ -82,8 +82,7 @@ class LocalDocument(BaseDocument):
         
         
     def get_raw_html(self):
-        file_path = os.path.join(settings.PATH_LOCAL_DATA,
-                                 'datasets',
+        file_path = get_local_path(
                                  self.dataset,
                                  'raw',
                                  self.raw_filename
@@ -99,8 +98,7 @@ class LocalDocument(BaseDocument):
             return urlparse.urljoin(settings.PATH_REMOTE_DATA, tail)
         
     def get_result(self):
-        file_path = os.path.join(settings.PATH_LOCAL_DATA,
-                                 'datasets',
+        file_path = get_local_path(
                                  self.dataset,
                                  'clean',
                                  self.clean_filename

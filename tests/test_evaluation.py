@@ -108,6 +108,12 @@ class TestEvaluation(unittest2.TestCase):
         gn = GoogleNewsFormat(s, 'utf8')
         self.assertEqual(gn.get_word_seq(), ['headline','here','double','content','text','content','here'])
         self.assertEqual(gn.get_bow(), {'headline':1,'here':2,'double':1,'content':2,'text':1})
+        
+    def test_googlenewsformat_empty(self):
+        s = ''
+        gn = GoogleNewsFormat(s,'ascii')
+        self.assertEqual(gn.get_word_seq(), [])
+        self.assertEqual(gn.get_bow(), {})
     
 def main():
     unittest2.main(exit = False, verbosity = 2)
