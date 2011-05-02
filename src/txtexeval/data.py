@@ -62,11 +62,9 @@ class BaseDocument(object):
     def get_url(self):
         pass
     
-    def get_result(self):
-        # must return an instance of BaseResultFormat
+    def get_clean(self):
         pass
     
-
 class LocalDocument(BaseDocument):
     '''Evaluation data representation using local filesystem'''
     
@@ -80,13 +78,8 @@ class LocalDocument(BaseDocument):
         self.raw_encoding = kwargs.pop('raw_encoding')
         self.clean_encoding = kwargs.pop('clean_encoding')
         
-        
     def get_raw_html(self):
-        file_path = get_local_path(
-                                 self.dataset,
-                                 'raw',
-                                 self.raw_filename
-                                 )
+        file_path = get_local_path(self.dataset,'raw',self.raw_filename)
         with codecs.open(file_path,'r', encoding = self.raw_encoding, errors = 'ignore') as f:
             return f.read()
     
@@ -97,25 +90,11 @@ class LocalDocument(BaseDocument):
             tail = self.dataset + '/' + self.raw_filename
             return urlparse.urljoin(settings.PATH_REMOTE_DATA, tail)
         
-    def get_result(self):
-        file_path = get_local_path(
-                                 self.dataset,
-                                 'clean',
-                                 self.clean_filename
-                                 )
+    def get_clean(self):
+        file_path = get_local_path(self.dataset,'clean',self.clean_filename)
         with codecs.open(file_path, 'r', encoding =  self.clean_encoding, errors = 'ignore') as f:
-            return CleanEvalFormat(f.read())
+            return f.read()
         
-class BaseResultStorage(object):
-    
-    def __init__(self, dataset_name, extractor_class):
-        self.dataset =  dataset_name
-        self.extractor_cls = extractor_class
-        
-    def push_result(self, document):
-        pass
-    
-    
 class ExtractionSummary(object):
     
     @verify_local_dataset
@@ -160,6 +139,15 @@ class ExtractionSummary(object):
         else:
             raise DataError('extractor not set')
         
+class BaseResultStorage(object):
+    
+    def __init__(self, dataset_name, extractor_class):
+        self.dataset =  dataset_name
+        self.extractor_cls = extractor_class
+        
+    def push_result(self, document):
+        pass
+    
 class LocalResultStorage(BaseResultStorage):
     
     @verify_local_dataset
