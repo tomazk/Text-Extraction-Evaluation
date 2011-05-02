@@ -44,12 +44,9 @@ def _html_to_text(html, encoding):
     '''Get all the text from a given html string'''
     soup = BeautifulSoup(html, fromEncoding = encoding)
     tags = soup.findAll(text = True)
-    def useful(element):
-        if element.parent.name in ('style', 'script', 'head', 'title'):
-            return False
-        return True
+    useful = lambda e: e.parent.name not in ('style', 'script', 'head', 'title')
     tags = filter(useful, tags)
-    return ''.join(map(lambda e: e.encode(encoding), tags))
+    return ' '.join(map(lambda e: e.encode(encoding), tags))
     
 # results
 
@@ -245,7 +242,7 @@ class GoogleNewsFormat(ResultFormat):
         content_strings = []
         for ct in self._content_tags:
             content_strings.extend(ct.findAll(text=True))
-        self._content_string = ''.join(map(lambda e: e.encode(encoding), content_strings))
+        self._content_string = ' '.join(map(lambda e: e.encode(encoding), content_strings))
         
     def get_word_seq(self):
         return _tokenize_text(self._content_string)
