@@ -1,7 +1,6 @@
 '''
 Script for extracting article text from dataset instances
 '''
-import sys
 import time
 import logging
 

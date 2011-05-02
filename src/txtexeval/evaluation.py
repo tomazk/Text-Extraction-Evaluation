@@ -6,14 +6,51 @@ import difflib
 import math
 from collections import namedtuple
 
+from BeautifulSoup import BeautifulSoup
+
 import settings
 
 # module utils
 
-def _remove_punctuation(s):
-    exclude = set(string.punctuation)
-    return ''.join( ch for ch in s if ch not in exclude )
+re_CONTROL = re.compile("[\x00-\x1F]+")
+re_WS = re.compile("\s+")
+re_NONASCII = re.compile("[\x80-\xFF]+")
 
+def _tokenize_text(dirty_text):
+    '''Tokenize dirty text into a normalized list of words'''
+    # remove punctuation and replace with whitespace
+    table = string.maketrans(string.punctuation, ' '*len(string.punctuation))
+    dirty_text =  dirty_text.translate(table)
+    # remove any control char
+    dirty_text = re_CONTROL.sub(' ', dirty_text)
+    # remove any non ascii char to mitigate the troubles of broken encodings
+    dirty_text = re_NONASCII.sub('', dirty_text)
+    # normalize to lowercase
+    dirty_text = dirty_text.lower()
+    # remove empty tokens
+    return filter(lambda w: w != '', re_WS.split(dirty_text))
+
+def _bow(word_tokens):
+    '''Returns bag of words dictionary from a list of word tokens'''
+    bow = {}
+    for i in word_tokens:
+        if i not in bow:
+            bow[i] = 1
+        else:
+            bow[i] += 1
+    return bow
+    
+def _html_to_text(html, encoding):
+    '''Get all the text from a given html string'''
+    soup = BeautifulSoup(html, fromEncoding = encoding)
+    tags = soup.findAll(text = True)
+    def useful(element):
+        if element.parent.name in ('style', 'script', 'head', 'title'):
+            return False
+        return True
+    tags = filter(useful, tags)
+    return ''.join(map(lambda e: e.encode(encoding), tags))
+    
 # results
 
 Result = namedtuple('Result', 'precision recall f1_score')# result instance
@@ -137,7 +174,7 @@ class TextOnlyEvaluator(BaseEvaluator):
         
 #formats
     
-class BaseTextResultFormat(object):
+class ResultFormat(object):
     
     def get_bow(self):# bag of words
         pass
@@ -145,45 +182,75 @@ class BaseTextResultFormat(object):
     def get_word_seq(self):# sequence of words
         pass
     
-class TextResultFormat(BaseTextResultFormat):
+class TextResultFormat(ResultFormat):
+    '''Basic format for dirty text'''
     
-    def __init__(self, result_string):
-        self._strip = _remove_punctuation(result_string)
+    def __init__(self, dirty_text):
+        self._text = dirty_text
 
     def get_word_seq(self):
-        split = re.split(r'[\s]+', self._strip)
-        return [i for i in split if i != '' ]
+        return _tokenize_text(self._text)
     
     def get_bow(self):
-        raise NotImplementedError
+        return _bow(_tokenize_text(self._text))
     
-class CleanEvalFormat(BaseTextResultFormat):
+class CleanEvalFormat(ResultFormat):
+    '''Format specific for cleaneval dataset'''
+    
+    re_URL = re.compile(r'^(\s+)URL:(.*)\n')
+    re_TAG = re.compile(r'^(\s+)<(p|h|l)>', re.IGNORECASE | re.MULTILINE)
     
     def __init__(self, cleaneval_string):
         # remove URL meta data
-        self._strip = re.sub(r'URL:(.*)\n', '', cleaneval_string)
+        self._text = self.re_URL.sub( '', cleaneval_string)
         # remove tag guidelines
-        self._strip = re.sub(r'<(p|h|l)>', '', self._strip)
-    
-        self._strip = _remove_punctuation(self._strip)
+        self._text = self.re_TAG.sub('', self._text)
         
     def get_word_seq(self):
-        split = re.split(r'[\s]+', self._strip)
-        return [i for i in split if i != '' ]
+        return _tokenize_text(self._text)
         
     def get_bow(self):
-        bow = {}
-        seq = self.get_word_seq()
+        return _bow(_tokenize_text(self._text))
         
-        for i in seq:
-            if i not in bow:
-                bow[i] = 1
-            else:
-                bow[i] += 1
-        
-        return bow
-        
-        
+class GoogleNewsFormat(ResultFormat):
+    '''
+    Format specific for google news dataset
     
+    From README.txt distributed with google news dataset:
+    The human-assessed documents contain annotations in the form of <SPAN> tags
+    with specific CSS classes that indicate the type of content:
+    x-nc-sel0    Not content
+    x-nc-sel1    Headline
+    x-nc-sel2    Full text
+    x-nc-sel3    Supplemental
+    x-nc-sel4    Related content
+    x-nc-sel5    Comments
+    '''
+    
+    re_CLASS = re.compile('x-nc-sel[1|2]')
+    
+    def __init__(self, gnews_string, encoding):
+        soup = BeautifulSoup(gnews_string, fromEncoding = encoding)
+        
+        # The trouble of google news dataset is that it sometimes nests 
+        # the annotated span tags. That's why we first have to find any 
+        # annotated children and remove them from the content_tags list.
+        redundant_tags = []
+        content_tags = soup.findAll('span',attrs = {'class' : self.re_CLASS })
+        for ct in content_tags:
+            red = ct.findAll('span',attrs = {'class' : self.re_CLASS })
+            redundant_tags.extend(red)
+        self._content_tags = filter(lambda tag: tag not in redundant_tags, content_tags)
+        # Next we find all the text and concatenate it into one single string
+        content_strings = []
+        for ct in self._content_tags:
+            content_strings.extend(ct.findAll(text=True))
+        self._content_string = ''.join(map(lambda e: e.encode(encoding), content_strings))
+        
+    def get_word_seq(self):
+        return _tokenize_text(self._content_string)
+        
+    def get_bow(self):
+        return _bow(_tokenize_text(self._content_string))
         
     
