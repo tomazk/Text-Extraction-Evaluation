@@ -198,7 +198,7 @@ class CleanEvalFormat(ResultFormat):
     re_TAG = re.compile(r'^(\s+)<(p|h|l)>', re.IGNORECASE | re.MULTILINE)
     
     @staticmethod
-    def from_document(self, document):
+    def from_document(document):
         return CleanEvalFormat(document.get_clean())
     
     def __init__(self, cleaneval_string):
@@ -231,7 +231,7 @@ class GoogleNewsFormat(ResultFormat):
     re_CLASS = re.compile('x-nc-sel[1|2]')
     
     @staticmethod
-    def from_document(self, document):
+    def from_document(document):
         return GoogleNewsFormat(document.get_clean(), document.clean_encoding)
     
     def __init__(self, gnews_string, encoding):
