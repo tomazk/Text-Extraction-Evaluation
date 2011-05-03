@@ -40,14 +40,6 @@ def _bow(word_tokens):
             bow[i] += 1
     return bow
     
-def _html_to_text(html, encoding):
-    '''Get all the text from a given html string'''
-    soup = BeautifulSoup(html, fromEncoding = encoding)
-    tags = soup.findAll(text = True)
-    useful = lambda e: e.parent.name not in ('style', 'script', 'head', 'title')
-    tags = filter(useful, tags)
-    return ' '.join(map(lambda e: e.encode(encoding), tags))
-    
 # results
 
 Result = namedtuple('Result', 'precision recall f1_score')# result instance
@@ -98,8 +90,7 @@ class TextBasedResults(BaseEvalResults):
         return self.text_eval_results
     
     def append_result(self, result):
-        if self._extractor:
-            self.text_eval_results[self._extractor].append(result)
+        self.text_eval_results[self._extractor].append(result)
     
     def _statistics(self, extractor, stat_typ): # DRY helper
         if stat_typ == 'precision':  selector = 0
@@ -145,7 +136,6 @@ class BaseEvaluator():
         self.retrieved = retrieved
         self.relevant = relevant
     
-    
     def get_eval_results(self):
         # return instance of Result
         pass
@@ -163,9 +153,9 @@ class TextOnlyEvaluator(BaseEvaluator):
         
         rel_union_ret = sum(i.size for i in matches) if len(matches) > 0 else 0
         
-        precision = float(rel_union_ret) / float(len(ret)) if len(ret) > 0 else 0.
-        recall = float(rel_union_ret) / float(len(rel)) if len(rel) > 0 else 0.
-        f1_score = (2. * precision * recall)/(precision + recall) if precision + recall > 0 else 0
+        precision = float(rel_union_ret) / float(len(ret)) if len(ret) > 0 else float('inf')
+        recall = float(rel_union_ret) / float(len(rel)) if len(rel) > 0 else float('inf')
+        f1_score = (2. * precision * recall)/(precision + recall) if precision + recall > 0 else float('inf')
         
         return Result(precision, recall, f1_score)
         

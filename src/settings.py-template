@@ -29,5 +29,5 @@ READABILITY_ENDPOINT = 'http://yourdomain/extract/'
 #thrift RPC endpoint provided by Zemanta Ltd
 ZEMANTA_THRIFT = (
     ('host', ''),
-    ('port', ''),
+    ('port', <int port number>),
 )

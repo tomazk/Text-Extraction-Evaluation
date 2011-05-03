@@ -4,8 +4,9 @@ import json
 import readability
 
 import settings
-from .util import Request
+from .util import Request, html_to_text
 from .util.zemanta.client import ClientManager
+from .evaluation import TextResultFormat
 
 class ExtractorError(Exception):
     '''Extractor failed on the network layer'''
@@ -63,6 +64,11 @@ class BaseExtractor(object):
         '''Returns unformatted extractor resposne'''
         pass
     
+    @classmethod
+    def formated_result(cls, result_string):
+        pass
+    
+    
 class _ContentCheckMin(object):
     
     def _content_status(self):
@@ -70,7 +76,14 @@ class _ContentCheckMin(object):
         if js['status'] == "ERROR":
             raise ContentExtractorError(js['errorMsg'].encode('utf-8'))
         
-class BoilerpipeDefaultExtractor(_ContentCheckMin,BaseExtractor):
+class _FormattedResultMin(object):
+    
+    @classmethod
+    def formated_result(cls, result_string):
+        js = json.loads(result_string)
+        return TextResultFormat(js['result'].encode('utf8'))
+        
+class BoilerpipeDefaultExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtractor):
     '''Boilerpipe default extractor '''
     
     NAME = 'Boilerpipe DEF'
@@ -103,7 +116,7 @@ class BoilerpipeArticleExtractor(BoilerpipeDefaultExtractor):
     __extractor_type = 'article'
     
     
-class GooseExtractor(_ContentCheckMin,BaseExtractor):
+class GooseExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtractor):
     '''Goose project extractor'''
     
     NAME = 'Goose'
@@ -119,7 +132,6 @@ class GooseExtractor(_ContentCheckMin,BaseExtractor):
             headers = {'Content-Type':'application/x-www-form-urlencoded'}
         )
         return req.post()
-
     
 class MSSExtractor(BaseExtractor):
     '''MSS implementation by Jeffrey Pasternack'''
@@ -139,6 +151,11 @@ class MSSExtractor(BaseExtractor):
         )
         return req.post()
     
+    @classmethod
+    def formatted_result(cls, result_string):
+        return TextResultFormat(html_to_text(result_string, 'utf8'))
+        
+    
 class PythonReadabilityExtractor(BaseExtractor):
     '''Extractor based on python-readability 
     (https://github.com/gfxmonk/python-readability)'''
@@ -153,8 +170,11 @@ class PythonReadabilityExtractor(BaseExtractor):
         # FIXME
         return doc.summary().encode('ascii','ignore')
     
+    @classmethod
+    def formated_result(cls, result_string):
+        return TextResultFormat(html_to_text(result_string, 'utf8'))
     
-class NodeReadabilityExtractor(BaseExtractor):
+class NodeReadabilityExtractor(_FormattedResultMin,BaseExtractor):
     '''Extractor based on node-readability'''
     
     NAME = 'Node Readability'
@@ -205,6 +225,10 @@ class AlchemyExtractor(BaseExtractor):
         if js['status'] == 'ERROR':
             raise ContentExtractorError(js['statusInfo'].encode('utf8'))
         
+    @classmethod
+    def formated_result(cls, result_string):
+        js = json.loads(result_string, encoding = 'utf8')
+        return TextResultFormat(js['text'].encode('utf8'))
         
 class DiffbotExtractor(BaseExtractor):
     '''Diffbot extractor'''
@@ -227,6 +251,11 @@ class DiffbotExtractor(BaseExtractor):
         )
         return req.get()
     
+    @classmethod
+    def formated_result(cls, result_string):
+        js = json.loads(result_string, encoding = 'utf8')
+        return TextResultFormat(js['text'].encode('utf8'))
+    
 class ExtractivExtractor(BaseExtractor):
     '''Extractiv extractor'''
     
@@ -246,6 +275,11 @@ class ExtractivExtractor(BaseExtractor):
             
         )
         return req.post()
+    
+    @classmethod
+    def formated_result(cls, result_string):
+        js = json.loads(result_string, encoding = 'utf8')
+        return TextResultFormat(js['text'].encode('utf8'))
         
 class RepustateExtractor(BaseExtractor):
     '''Repustate extractor'''
@@ -268,6 +302,11 @@ class RepustateExtractor(BaseExtractor):
         js = json.loads(self._content, encoding = 'utf8')
         if js['status'] != 'OK':
             raise ContentExtractorError(js['status'].encode('utf8'))
+        
+    @classmethod
+    def formated_result(cls, result_string):
+        js = json.loads(result_string, encoding = 'utf8')
+        return TextResultFormat(js['text'].encode('utf8'))
     
 class ZemantaExtractor(BaseExtractor):
     '''Extractor used internally by Zemanta Ltd'''
@@ -285,12 +324,17 @@ class ZemantaExtractor(BaseExtractor):
         if response.error:
             raise ExtractorError(response.error)
         return response.text
+    
+    @classmethod
+    def formated_result(cls, result_string):
+        # TODO: check this
+        return TextResultFormat(result_string)
         
         
 # list of all extractor classes         
 extractor_list = (
-    BoilerpipeArticleExtractor,
     BoilerpipeDefaultExtractor,
+    BoilerpipeArticleExtractor,
     GooseExtractor,
     MSSExtractor,
     PythonReadabilityExtractor,

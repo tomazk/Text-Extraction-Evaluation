@@ -6,7 +6,6 @@ import logging
 import yaml
 
 import settings
-from .evaluation import CleanEvalFormat
 from .util import check_local_path, get_local_path
 from .extractor import extractor_list, ExtractorError, ContentExtractorError
 
@@ -148,6 +147,9 @@ class BaseResultStorage(object):
     def push_result(self, document):
         pass
     
+    def fetch_result(self, document): 
+        pass
+    
 class LocalResultStorage(BaseResultStorage):
     
     @verify_local_dataset
@@ -194,6 +196,14 @@ class LocalResultStorage(BaseResultStorage):
             output_file = '%s.%s' % (document.raw_filename,self.extractor_cls.FORMAT)
             with open(os.path.join(self._extractor_result_dir, output_file), 'w') as out:
                 out.write(result)
+                
+    def fetch_result(self, document):
+        result_file = '%s.%s' % (document.raw_filename,self.extractor_cls.FORMAT)
+        result_file_path = os.path.join(self._extractor_result_dir, result_file)
+        if not os.path.exists(result_file_path):
+            raise DataError('result file %s does not exist' % result_file)
+        with open(result_file_path,'r') as f:
+            return f.read()
             
     @property        
     def log_path(self):

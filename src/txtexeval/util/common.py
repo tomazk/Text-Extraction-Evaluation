@@ -2,6 +2,8 @@ import os
 import urllib
 import urllib2
 
+from BeautifulSoup import BeautifulSoup
+
 import settings
 
 # urllib wrappers
@@ -83,3 +85,11 @@ def execute_only_once(method):
             setattr(self, attrname, method(self, *args, **kwargs))
             return getattr(self, attrname)
     return wrap
+
+def html_to_text(html, encoding):
+    '''Get all the text from a given html string'''
+    soup = BeautifulSoup(html, fromEncoding = encoding)
+    tags = soup.findAll(text = True)
+    useful = lambda e: e.parent.name not in ('style', 'script', 'head', 'title')
+    tags = filter(useful, tags)
+    return ' '.join(map(lambda e: e.encode(encoding), tags))
