@@ -92,7 +92,7 @@ class LocalDocument(BaseDocument):
         
     def get_clean(self):
         file_path = get_local_path(self.dataset,'clean',self.clean_filename)
-        with codecs.open(file_path, 'r', encoding =  self.clean_encoding, errors = 'ignore') as f:
+        with open(file_path, 'r') as f:
             return f.read()
         
 class ExtractionSummary(object):

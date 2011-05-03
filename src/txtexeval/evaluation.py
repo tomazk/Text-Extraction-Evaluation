@@ -146,13 +146,13 @@ class BaseEvaluator():
         self.relevant = relevant
     
     
-    def get_results(self):
+    def get_eval_results(self):
         # return instance of Result
         pass
     
 class TextOnlyEvaluator(BaseEvaluator):
     
-    def get_results(self):
+    def get_eval_results(self):
         
         s = difflib.SequenceMatcher()
         rel = self.relevant.get_word_seq()
@@ -197,6 +197,10 @@ class CleanEvalFormat(ResultFormat):
     re_URL = re.compile(r'^(\s+)URL:(.*)\n')
     re_TAG = re.compile(r'^(\s+)<(p|h|l)>', re.IGNORECASE | re.MULTILINE)
     
+    @staticmethod
+    def from_document(self, document):
+        return CleanEvalFormat(document.get_clean())
+    
     def __init__(self, cleaneval_string):
         # remove URL meta data
         self._text = self.re_URL.sub( '', cleaneval_string)
@@ -226,6 +230,10 @@ class GoogleNewsFormat(ResultFormat):
     
     re_CLASS = re.compile('x-nc-sel[1|2]')
     
+    @staticmethod
+    def from_document(self, document):
+        return GoogleNewsFormat(document.get_clean(), document.clean_encoding)
+    
     def __init__(self, gnews_string, encoding):
         soup = BeautifulSoup(gnews_string, fromEncoding = encoding)
         
@@ -249,5 +257,21 @@ class GoogleNewsFormat(ResultFormat):
         
     def get_bow(self):
         return _bow(_tokenize_text(self._content_string))
+    
+# formats in this mapping should have a from_document static method implemented
+dataset_format_map = (
+    ('cleaneval', CleanEvalFormat),
+    ('gnews', GoogleNewsFormat),
+)
+
+def from_document_factory(document, slug):
+    '''
+    Factory function that returns an instance of a format class listed in the
+    dataset format map.
+    '''
+    map = dict(dataset_format_map)
+    cls = map[slug]
+    return cls.from_document(document)
+
         
     

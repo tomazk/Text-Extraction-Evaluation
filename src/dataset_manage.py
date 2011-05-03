@@ -310,7 +310,7 @@ class CleanevalProcessor(BaseProcessor):
 def parse_args():               
     # sys argument parsing using argparse
     parser = argparse.ArgumentParser(description = 'Tool for generating meta data files and cleanup preprocessing regarding datasets')
-    parser.add_argument('dataset_type', choices = ('cleaneval','google-news'), help = 'dataset type e.g. cleaneval' )
+    parser.add_argument('dataset_type', choices = ('cleaneval','gnews'), help = 'dataset type e.g. cleaneval' )
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-p','--path', help = 'path to the meta data output file and .log file (uses the default path if not provided)')
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
@@ -351,7 +351,7 @@ def main():
             print e
             sys.exit(-1)
             
-    elif args.dataset_type == 'google-news':
+    elif args.dataset_type == 'gnews':
         processor = GooglenewsProcessor(output_dir, args.dataset_name)
         try:
             print '[GENERATING META DATA]'
