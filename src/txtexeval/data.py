@@ -204,13 +204,6 @@ class LocalResultStorage(BaseResultStorage):
             raise DataError('result file %s does not exist' % result_file)
         with open(result_file_path,'r') as f:
             return f.read()
-            
-    @property        
-    def log_path(self):
-        return os.path.join(
-            self._result_dir,
-            '%s.log' % self.extractor_cls.SLUG
-        )
         
     def dump_summary(self):
         logger.info(self._summary.short_summary())

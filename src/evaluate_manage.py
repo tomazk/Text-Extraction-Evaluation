@@ -17,7 +17,7 @@ logger = logging.getLogger()
 
 def local_evaluate(dataset_type, dataset_name):    
     for extractor_cls in extractor_list:
-        logger.debug('started evaluating extractor %s', extractor_cls.NAME)
+        logger.info('started evaluating extractor %s', extractor_cls.NAME)
         results = TextBasedResults(extractor_cls.NAME)
         storage = LocalResultStorage(dataset_name, extractor_cls)
         
