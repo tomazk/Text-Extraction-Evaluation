@@ -47,7 +47,7 @@ Result = namedtuple('Result', 'precision recall f1_score')# result instance
 class BaseEvalResults(object):
     '''Base results container'''
     
-    __pickle_filepath = os.path.join(settings.PATH_LOCAL_DATA,'results-cache','results.pickle')
+    __pickle_path = os.path.join(settings.PATH_LOCAL_DATA,'results-cache')
     
     __internal_state = {} # Borg design pattern
     
@@ -63,14 +63,14 @@ class BaseEvalResults(object):
             self.text_eval_results[extractor] = []
         self._extractor = extractor
 
-    def save(self):
+    def save(self, dataset_name):
         '''Pickle the internal state'''
-        with open( self.__pickle_filepath ,'wb') as f:
+        with open(os.path.join(self.__pickle_path,'%s.pickle' % dataset_name),'wb') as f:
             pickle.dump( self.__internal_state ,f)
     
-    def load(self):
+    def load(self, dataset_name):
         '''Unpickle the internal state'''
-        with open( self.__pickle_filepath ,'rb') as f:
+        with open(os.path.join(self.__pickle_path,'%s.pickle' % dataset_name),'rb') as f:
             self.__internal_state = pickle.load(f)
             self.__dict__ = self.__internal_state
             

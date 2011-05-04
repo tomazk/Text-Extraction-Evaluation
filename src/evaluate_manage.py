@@ -39,7 +39,7 @@ def local_evaluate(dataset_type, dataset_name):
             
     results = TextBasedResults()
     results.print_results()
-    results.save()     
+    results.save(dataset_name)     
     
 def parse_args():
     '''Sys argument parsing trough argparse'''
