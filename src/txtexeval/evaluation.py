@@ -97,13 +97,18 @@ class TextBasedResults(BaseEvalResults):
         elif stat_typ == 'recall':   selector = 1
         elif stat_typ == 'f1_score': selector = 2
         
-        results_list = self.text_eval_results[extractor]
-        avg = sum([r[selector] for r in results_list]) / float(len(results_list))
+        # yes ... there is a rationale behind this
+        results_list = [r[selector] for r in self.text_eval_results[extractor] \
+            if (not math.isinf(r[selector]) and not(math.isnan(r[selector])))]
         
-        stddev =  sum([(r[selector] - avg)**2. for r in results_list]) / float(len(results_list))
+        # avarage
+        avg = sum(results_list) / float(len(results_list))
+        
+        # std deviation
+        stddev =  sum([(r - avg)**2. for r in results_list]) / float(len(results_list))
         stddev = math.sqrt(stddev)
         
-        return avg, stddev
+        return avg, stddev, len(results_list)
       
     def precision_statistics(self, extractor):
         '''Return a tuple containing (avg, stddev)'''
@@ -120,12 +125,14 @@ class TextBasedResults(BaseEvalResults):
     def print_results(self):
         print 'results based on text based evaluation'
         for extractor_name in self.text_eval_results.iterkeys():
-            
             print '----------------'
             print 'Ex. name: %s' % extractor_name
-            print 'avg. precision: %f   stddev: %f' % self.precision_statistics(extractor_name) 
-            print 'avg. recall: %f   stddev: %f' % self.recall_statistics(extractor_name) 
-            print 'avg. F1 score: %f   stddev: %f' % self.f1score_statistics(extractor_name) 
+            print 'avg. precision: %f   stddev: %f [on %d instances]' \
+             % self.precision_statistics(extractor_name) 
+            print 'avg. recall: %f   stddev: %f [on %d instances]' \
+             % self.recall_statistics(extractor_name) 
+            print 'avg. F1 score: %f   stddev: %f [on %d instances]' \
+             % self.f1score_statistics(extractor_name) 
     
 # evaluators    
 
@@ -153,9 +160,14 @@ class TextOnlyEvaluator(BaseEvaluator):
         
         rel_union_ret = sum(i.size for i in matches) if len(matches) > 0 else 0
         
-        precision = float(rel_union_ret) / float(len(ret)) if len(ret) > 0 else float('inf')
-        recall = float(rel_union_ret) / float(len(rel)) if len(rel) > 0 else float('inf')
-        f1_score = (2. * precision * recall)/(precision + recall) if precision + recall > 0 else float('inf')
+        precision = float(rel_union_ret) / float(len(ret)) \
+                    if len(ret) > 0 else float('inf')
+        recall = float(rel_union_ret) / float(len(rel)) \
+                    if len(rel) > 0 else float('inf')
+                    
+        # nan when prec or recall are inf or 0.0
+        f1_score = (2. * precision * recall)/(precision + recall) \
+                    if precision + recall > 0 else float('inf')
         
         return Result(precision, recall, f1_score)
         
@@ -262,6 +274,3 @@ def from_document_factory(document, slug):
     map = dict(dataset_format_map)
     cls = map[slug]
     return cls.from_document(document)
-
-        
-    

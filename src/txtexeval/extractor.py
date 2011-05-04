@@ -65,7 +65,7 @@ class BaseExtractor(object):
         pass
     
     @classmethod
-    def formated_result(cls, result_string):
+    def formatted_result(cls, result_string):
         pass
     
     
@@ -79,8 +79,8 @@ class _ContentCheckMin(object):
 class _FormattedResultMin(object):
     
     @classmethod
-    def formated_result(cls, result_string):
-        js = json.loads(result_string)
+    def formatted_result(cls, result_string):
+        js = json.loads(result_string, encoding = 'utf8')
         return TextResultFormat(js['result'].encode('utf8'))
         
 class BoilerpipeDefaultExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtractor):
@@ -171,7 +171,7 @@ class PythonReadabilityExtractor(BaseExtractor):
         return doc.summary().encode('ascii','ignore')
     
     @classmethod
-    def formated_result(cls, result_string):
+    def formatted_result(cls, result_string):
         return TextResultFormat(html_to_text(result_string, 'utf8'))
     
 class NodeReadabilityExtractor(_FormattedResultMin,BaseExtractor):
@@ -226,7 +226,7 @@ class AlchemyExtractor(BaseExtractor):
             raise ContentExtractorError(js['statusInfo'].encode('utf8'))
         
     @classmethod
-    def formated_result(cls, result_string):
+    def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
         return TextResultFormat(js['text'].encode('utf8'))
         
@@ -252,7 +252,8 @@ class DiffbotExtractor(BaseExtractor):
         return req.get()
     
     @classmethod
-    def formated_result(cls, result_string):
+    def formatted_result(cls, result_string):
+        #TODO: append title
         js = json.loads(result_string, encoding = 'utf8')
         return TextResultFormat(js['text'].encode('utf8'))
     
@@ -277,9 +278,10 @@ class ExtractivExtractor(BaseExtractor):
         return req.post()
     
     @classmethod
-    def formated_result(cls, result_string):
+    def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
-        return TextResultFormat(js['text'].encode('utf8'))
+        #TODO: append title
+        return TextResultFormat(js['Document']['text'].encode('utf8'))
         
 class RepustateExtractor(BaseExtractor):
     '''Repustate extractor'''
@@ -304,7 +306,7 @@ class RepustateExtractor(BaseExtractor):
             raise ContentExtractorError(js['status'].encode('utf8'))
         
     @classmethod
-    def formated_result(cls, result_string):
+    def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
         return TextResultFormat(js['text'].encode('utf8'))
     
@@ -326,8 +328,7 @@ class ZemantaExtractor(BaseExtractor):
         return response.text
     
     @classmethod
-    def formated_result(cls, result_string):
-        # TODO: check this
+    def formatted_result(cls, result_string):
         return TextResultFormat(result_string)
         
         

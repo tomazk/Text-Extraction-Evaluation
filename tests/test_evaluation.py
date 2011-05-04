@@ -105,13 +105,15 @@ class TestEvaluation(unittest2.TestCase):
                 <span class="x-nc-sel2"> 
                     Text content here€
                 </span>
+                content
             </span>
         </span> 
+        Not content
         </p>
         '''
         gn = GoogleNewsFormat(s, 'utf8')
-        self.assertEqual(gn.get_word_seq(), ['headline','here','double','content','text','content','here'])
-        self.assertEqual(gn.get_bow(), {'headline':1,'here':2,'double':1,'content':2,'text':1})
+        self.assertEqual(gn.get_word_seq(), ['headline','here','double','content','text','content','here','content',])
+        self.assertEqual(gn.get_bow(), {'headline':1,'here':2,'double':1,'content':3,'text':1})
         
     def test_googlenewsformat_empty(self):
         s = ''
