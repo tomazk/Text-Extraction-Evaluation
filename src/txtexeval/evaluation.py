@@ -99,7 +99,7 @@ class TextBasedResults(BaseEvalResults):
         
         # yes ... there is a rationale behind this
         results_list = [r[selector] for r in self.text_eval_results[extractor] \
-            if (not math.isinf(r[selector]) and not(math.isnan(r[selector])))]
+            if (not math.isinf(r[selector])) and (not math.isnan(r[selector])) ]
         
         # avarage
         avg = sum(results_list) / float(len(results_list))
