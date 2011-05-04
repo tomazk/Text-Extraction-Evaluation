@@ -3,8 +3,12 @@ import re
 
 import unittest2
 
-from txtexeval.evaluation import _tokenize_text,_html_to_text
-from txtexeval.evaluation import TextResultFormat, CleanEvalFormat,GoogleNewsFormat
+from txtexeval.util import html_to_text
+from txtexeval.evaluation import _tokenize_text
+from txtexeval.evaluation import TextResultFormat, \
+                                 CleanEvalFormat,GoogleNewsFormat
+                                 
+                                 
 
 class TestEvaluation(unittest2.TestCase):
     
@@ -46,14 +50,14 @@ class TestEvaluation(unittest2.TestCase):
             </body>
         </html>
         '''
-        t = _html_to_text(s, encoding = 'ascii')
+        t = html_to_text(s, encoding = 'ascii')
         t = t.strip()
         self.assertTrue(t.startswith('Body'))
         self.assertTrue(t.endswith('text'))
         
     def test_html_to_text_empty(self):
         s = ''
-        t = _html_to_text(s, encoding = 'ascii')
+        t = html_to_text(s, encoding = 'ascii')
         self.assertTrue(re.match('\s*', t))
         
     def test_textresultformat(self):
