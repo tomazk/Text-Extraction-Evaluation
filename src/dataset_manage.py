@@ -27,8 +27,7 @@ import argparse
 import chardet
 from BeautifulSoup import BeautifulSoup
 
-import settings
-from txtexeval.util import check_local_path
+from txtexeval.util import check_local_path, get_local_path
 
 # module logger
 logger = logging.getLogger()
@@ -39,6 +38,9 @@ class MetaGeneratorError(Exception):
     pass
 
 class PreprocessingError(Exception):
+    pass
+
+class SkipTrigger(ValueError):
     pass
 
 # private helpers
@@ -61,7 +63,7 @@ def _verify_args(args):
         print 'error: path does not exist'
         sys.exit(-1)
         
-    output_dir = args.path or os.path.join(settings.PATH_LOCAL_DATA, 'datasets', args.dataset_name)
+    output_dir = args.path or get_local_path(args.dataset_name)
     print 'output directory: %s' % output_dir
     return output_dir
 
@@ -144,12 +146,35 @@ def _get_safe_encoding_name(encoding):
     else:
         return codec.name
     
+def _skip_file(regex, raw_filename):
+    # valiadate raw filenames
+    if not regex.match(raw_filename):
+        logger.debug('skipping file %s', raw_filename)
+        raise SkipTrigger
+
+# decorators
+
+def itarate_raw_filename(method):
+    def wrap(self):
+        for raw_filename in self._raw_filenames():
+            try:
+                method(self, raw_filename)
+            except SkipTrigger:
+                continue
+    return wrap
+
+def dump_meta_data(method):
+    def wrap(self,*args,**kwargs):
+        method(self,*args,**kwargs)
+        self._serialize_meta_data()
+    return wrap
+    
 # dataset specific processor classes
 
 class BaseProcessor(object):
     
     def __init__(self, output_dir, dataset_name):   
-        self._dataset_dir = os.path.join(settings.PATH_LOCAL_DATA,'datasets',dataset_name)
+        self._dataset_dir = get_local_path(dataset_name)
         self._output_dir = output_dir
         self.meta_data_list = [] # list to be serialized
     
@@ -169,47 +194,41 @@ class GooglenewsProcessor(BaseProcessor):
     
     re_TAIL = re.compile(r'(?P<id>.+)\.html$')
     
-    def generate_meta_data(self):
-        for raw_filename in self._raw_filenames():
-            
-            # valiadate raw filenames
-            if not self.re_TAIL.match(raw_filename):
-                logger.debug('skipping file %s for not matching google news naming convention', raw_filename)
-                continue
-            
-            with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
-                # check for cleaned file counterpart
-                if not os.path.exists(os.path.join(self._dataset_dir, 'clean', raw_filename )):
-                    raise MetaGeneratorError('No existing clean file counterpart for %s' % raw_filename)
-                
-                html_string = f.read()
-                
-                charset = _get_charset(html_string, raw_filename)
-                confidence = None
-                # if no charset is retrieved with document parsing
-                # use chardet library to detect encoding
-                if charset:
-                    raw_encoding = charset
-                else:
-                    det = chardet.detect(html_string)
-                    raw_encoding = det['encoding']
-                    confidence =  det['confidence']
-                    logger.debug('detected encoding %s in %s with confidence %f', raw_encoding, raw_filename, confidence)
-                    
-                safe_raw_encoding = _get_safe_encoding_name(raw_encoding)
-                
-                self.meta_data_list.append(dict(
-                    id = self.re_TAIL.match(raw_filename).group('id'),
-                    url = None,
-                    raw_encoding = safe_raw_encoding,
-                    clean_encoding = safe_raw_encoding, # TODO: must verify if this is allways true
-                    raw = raw_filename, 
-                    clean = raw_filename,
-                    meta = {'encoding_confidence': confidence}
-                ))
+    @dump_meta_data    
+    @itarate_raw_filename
+    def generate_meta_data(self, raw_filename):
+        _skip_file(self.re_TAIL, raw_filename)
         
-        # dump meta data
-        self._serialize_meta_data()
+        with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
+            # check for cleaned file counterpart
+            if not os.path.exists(os.path.join(self._dataset_dir, 'clean', raw_filename )):
+                raise MetaGeneratorError('No existing clean file counterpart for %s' % raw_filename)
+            
+            html_string = f.read()
+            
+            charset = _get_charset(html_string, raw_filename)
+            confidence = None
+            # if no charset is retrieved with document parsing
+            # use chardet library to detect encoding
+            if charset:
+                raw_encoding = charset
+            else:
+                det = chardet.detect(html_string)
+                raw_encoding = det['encoding']
+                confidence =  det['confidence']
+                logger.debug('detected encoding %s in %s with confidence %f', raw_encoding, raw_filename, confidence)
+                
+            safe_raw_encoding = _get_safe_encoding_name(raw_encoding)
+            
+            self.meta_data_list.append(dict(
+                id = self.re_TAIL.match(raw_filename).group('id'),
+                url = None,
+                raw_encoding = safe_raw_encoding,
+                clean_encoding = safe_raw_encoding, # TODO: must verify if this is allways true
+                raw = raw_filename, 
+                clean = raw_filename,
+                meta = {'encoding_confidence': confidence}
+            ))
                     
               
 class CleanevalProcessor(BaseProcessor):
@@ -217,109 +236,91 @@ class CleanevalProcessor(BaseProcessor):
     re_BACK = re.compile(r'^(?P<id>\d+)\.html\.backup$')
     re_NEW = re.compile(r'^\d+\.html$')
     
-    def create_backups(self):
+    @itarate_raw_filename
+    def create_backups(self, raw_filename):
         # rename every unprocessed [number].html to [number].html.backup 
         
-        for raw_filename in self._raw_filenames():
-            
-            # validate raw filename names
-            if not self.re_NEW.match(raw_filename):
-                logger.debug('skipping file %s for not matching cleaneval naming convention', raw_filename)
-                continue
-            
-            raw_filename_path = os.path.join(self._dataset_dir, 'raw', raw_filename)
-            backup_path = raw_filename_path + '.backup'
-            logger.info('renaming %s to %s', raw_filename, raw_filename + '.backup')
-            os.rename(raw_filename_path, backup_path)
+        raw_filename_path = os.path.join(self._dataset_dir, 'raw', raw_filename)
+        backup_path = raw_filename_path + '.backup'
+        logger.info('renaming %s to %s', raw_filename, raw_filename + '.backup')
+        os.rename(raw_filename_path, backup_path)
     
-    def generate_meta_data(self):
-        
-        for raw_filename in self._raw_filenames():
-      
-            # validate raw names
-            if not self.re_BACK.match(raw_filename):
-                continue
+    @dump_meta_data
+    @itarate_raw_filename
+    def generate_meta_data(self, raw_filename):
+        _skip_file(self.re_BACK, raw_filename)
+        with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
+            html_string = f.read()
             
-            with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
-                html_string = f.read()
-                
-                # check for an existing clean file counterpart
-                clean_filename = raw_filename.replace('.html.backup', '') + '-cleaned.txt'
-                if not os.path.exists(os.path.join(self._dataset_dir, 'clean', clean_filename )):
-                    raise MetaGeneratorError('No existing clean file counterpart for %s' % raw_filename)
-                
-                # get meta data from <text ...> tag
-                soup = BeautifulSoup(html_string)
-                text_tag = soup.find('text')
-                if text_tag == None:
-                    raise MetaGeneratorError('No <text> tag in %s' % raw_filename)
-                encoding = text_tag['encoding']
-                
-                # extract dataset specific meta-data and store it into a dict with
-                # keys id, title, encoding
-                # since we'll be removing the <text> tag from every document
-                # we better store this attributes in it's original form in meta.yaml
-                cleaneval_specific = {
-                    'id': _get_attribute(text_tag, 'id'),
-                    'title': _get_attribute(text_tag, 'title'),
-                    'encoding': _get_attribute(text_tag, 'encoding'),
-                }
-                
-                # get a safe encoding name
-                try:
-                    safe_encoding = _get_safe_encoding_name(encoding)
-                except MetaGeneratorError:
-                    det = chardet.detect(html_string)
-                    safe_encoding = _get_safe_encoding_name(det['encoding'])
-                    logger.info('detected encoding %s in %s with confidence %f', safe_encoding, raw_filename, det['confidence'] )
-
-                logger.debug('generating meta data for %s', raw_filename)
-                self.meta_data_list.append(dict(
-                    id = self.re_BACK.match(raw_filename).group('id'),
-                    url = None,
-                    raw_encoding = safe_encoding,
-                    # acording to anotation guidelines of cleaneval 
-                    # all cleaned text files are utf-8 encoded
-                    clean_encoding = 'utf-8',
-                    # we'll be generating [number].html in the preprocessing phase
-                    raw = raw_filename.replace('.backup', ''), 
-                    clean = clean_filename,
-                    meta = cleaneval_specific
-                ))
-        # dump meta data into meta.yaml
-        self._serialize_meta_data()
-                
+            # check for an existing clean file counterpart
+            clean_filename = raw_filename.replace('.html.backup', '') + '-cleaned.txt'
+            if not os.path.exists(os.path.join(self._dataset_dir, 'clean', clean_filename )):
+                raise MetaGeneratorError('No existing clean file counterpart for %s' % raw_filename)
             
-    def preprocess(self):
+            # get meta data from <text ...> tag
+            soup = BeautifulSoup(html_string)
+            text_tag = soup.find('text')
+            if text_tag == None:
+                raise MetaGeneratorError('No <text> tag in %s' % raw_filename)
+            encoding = text_tag['encoding']
+            
+            # extract dataset specific meta-data and store it into a dict with
+            # keys id, title, encoding
+            # since we'll be removing the <text> tag from every document
+            # we better store this attributes in it's original form in meta.yaml
+            cleaneval_specific = {
+                'id': _get_attribute(text_tag, 'id'),
+                'title': _get_attribute(text_tag, 'title'),
+                'encoding': _get_attribute(text_tag, 'encoding'),
+            }
+            
+            # get a safe encoding name
+            try:
+                safe_encoding = _get_safe_encoding_name(encoding)
+            except MetaGeneratorError:
+                det = chardet.detect(html_string)
+                safe_encoding = _get_safe_encoding_name(det['encoding'])
+                logger.info('detected encoding %s in %s with confidence %f', safe_encoding, raw_filename, det['confidence'] )
+    
+            logger.debug('generating meta data for %s', raw_filename)
+            self.meta_data_list.append(dict(
+                id = self.re_BACK.match(raw_filename).group('id'),
+                url = None,
+                raw_encoding = safe_encoding,
+                # acording to anotation guidelines of cleaneval 
+                # all cleaned text files are utf-8 encoded
+                clean_encoding = 'utf-8',
+                # we'll be generating [number].html in the preprocessing phase
+                raw = raw_filename.replace('.backup', 'iii'), 
+                clean = clean_filename,
+                meta = cleaneval_specific
+            ))
+   
+    @itarate_raw_filename
+    def preprocess(self, raw_filename):
         # remove all <text> tags
         # add missing <html><body> tags where needed
-        
-        for raw_filename in self._raw_filenames():
-            
-            # validate raw filename names
-            if not self.re_BACK.match(raw_filename):
-                logger.debug('skipping file %s during preprocessing', raw_filename)
-                continue
-            
-            with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
-                html_string = _remove_text_tag(f.read(), raw_filename)
                 
-                soup = BeautifulSoup(html_string)
-                if (not soup.find('html')) and (not soup.find('body')):
-                    # no html no body tag
-                    logger.warn('appending body and html tags to %s', raw_filename)
-                    html_string = '<html><body>  %s  </body></html>' % html_string
-                    
-                elif (not soup.find('html')) or (not soup.find('body')):
-                    # really weird case
-                    raise PreprocessingError('this file has html tag or body tag but not both') 
-                else:
-                    logger.info('no tag appending on %s', raw_filename)
+        _skip_file(self.re_BACK, raw_filename)
+        with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
+            html_string = _remove_text_tag(f.read(), raw_filename)
+            
+            soup = BeautifulSoup(html_string)
+            if (not soup.find('html')) and (not soup.find('body')):
+                # no html no body tag
+                logger.warn('appending body and html tags to %s', raw_filename)
+                html_string = '<html><body>  %s  </body></html>' % html_string
                 
-                output_filename = raw_filename.replace('.backup','')
-                logger.debug('preprocesing complete: %s ---> %s',raw_filename,output_filename)
-                with open(os.path.join(self._dataset_dir, 'raw', output_filename) ,'w') as output:
-                    output.write(html_string)
+            elif (not soup.find('html')) or (not soup.find('body')):
+                # really weird case
+                raise PreprocessingError('this file has html tag or body tag but not both') 
+            else:
+                logger.info('no tag appending on %s', raw_filename)
+            
+            output_filename = raw_filename.replace('.backup','')
+            logger.debug('preprocesing complete: %s ---> %s',raw_filename,output_filename)
+            with open(os.path.join(self._dataset_dir, 'raw', output_filename) ,'w') as output:
+                output.write(html_string)
 
 def parse_args():               
     # sys argument parsing using argparse
