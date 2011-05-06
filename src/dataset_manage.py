@@ -167,8 +167,16 @@ class BaseProcessor(object):
     
 class GooglenewsProcessor(BaseProcessor):
     
+    re_TAIL = re.compile(r'(?P<id>.+)\.html$')
+    
     def generate_meta_data(self):
         for raw_filename in self._raw_filenames():
+            
+            # valiadate raw filenames
+            if not self.re_TAIL.match(raw_filename):
+                logger.debug('skipping file %s for not matching google news naming convention', raw_filename)
+                continue
+            
             with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
                 # check for cleaned file counterpart
                 if not os.path.exists(os.path.join(self._dataset_dir, 'clean', raw_filename )):
@@ -191,6 +199,7 @@ class GooglenewsProcessor(BaseProcessor):
                 safe_raw_encoding = _get_safe_encoding_name(raw_encoding)
                 
                 self.meta_data_list.append(dict(
+                    id = self.re_TAIL.match(raw_filename).group('id'),
                     url = None,
                     raw_encoding = safe_raw_encoding,
                     clean_encoding = safe_raw_encoding, # TODO: must verify if this is allways true
@@ -205,13 +214,16 @@ class GooglenewsProcessor(BaseProcessor):
               
 class CleanevalProcessor(BaseProcessor):
     
+    re_BACK = re.compile(r'^(?P<id>\d+)\.html\.backup$')
+    re_NEW = re.compile(r'^\d+\.html$')
+    
     def create_backups(self):
         # rename every unprocessed [number].html to [number].html.backup 
         
         for raw_filename in self._raw_filenames():
             
             # validate raw filename names
-            if not re.match(r'^\d+.html$', raw_filename):
+            if not self.re_NEW.match(raw_filename):
                 logger.debug('skipping file %s for not matching cleaneval naming convention', raw_filename)
                 continue
             
@@ -225,7 +237,7 @@ class CleanevalProcessor(BaseProcessor):
         for raw_filename in self._raw_filenames():
       
             # validate raw names
-            if not re.match(r'^\d+.html.backup$', raw_filename):
+            if not self.re_BACK.match(raw_filename):
                 continue
             
             with open(os.path.join(self._dataset_dir, 'raw', raw_filename), 'r' ) as f:
@@ -263,6 +275,7 @@ class CleanevalProcessor(BaseProcessor):
 
                 logger.debug('generating meta data for %s', raw_filename)
                 self.meta_data_list.append(dict(
+                    id = self.re_BACK.match(raw_filename).group('id'),
                     url = None,
                     raw_encoding = safe_encoding,
                     # acording to anotation guidelines of cleaneval 
@@ -282,8 +295,9 @@ class CleanevalProcessor(BaseProcessor):
         # add missing <html><body> tags where needed
         
         for raw_filename in self._raw_filenames():
+            
             # validate raw filename names
-            if not re.match(r'^\d+.html.backup$', raw_filename):
+            if not self.re_BACK.match(raw_filename):
                 logger.debug('skipping file %s during preprocessing', raw_filename)
                 continue
             
