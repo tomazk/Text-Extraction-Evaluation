@@ -12,11 +12,15 @@ from txtexeval.util import get_local_path
 
 logger = logging.getLogger()
 
-def local_extract(dataset_name, extractor_slug, timeout):
+def local_extract(dataset_name, extractor_slug, timeout, retry_failed):
     # init storage and loader
     ex = get_extractor_cls(extractor_slug)
+    
+    if retry_failed:
+        loader = LocalDatasetLoader(dataset_name, load_failed = extractor_slug)
+    else:
+        loader = LocalDatasetLoader(dataset_name)
     storage = LocalResultStorage(dataset_name, ex)
-    loader = LocalDatasetLoader(dataset_name)
     
     logger.info('started extracting content from %s dataset using %s', dataset_name, ex.NAME)
     for doc in loader:
@@ -38,6 +42,7 @@ def parse_args():
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
     parser.add_argument('-t','--timeout', type=int, default=0, help='wait x seconds between extraction operations')
+    parser.add_argument('-rf','--retry_failed', action = 'store_true', help = 'retry to extract text from instances that failed')
     args = parser.parse_args()
     
     # printing arguments
@@ -70,9 +75,9 @@ def main():
     print '[STARTED]'
     if args.extractor == 'all': # special case
         for ex in extractor_list:
-            local_extract(args.dataset_name, ex.SLUG, args.timeout)
+            local_extract(args.dataset_name, ex.SLUG, args.timeout, args.retry_failed)
     else:
-        local_extract(args.dataset_name, args.extractor, args.timeout)
+        local_extract(args.dataset_name, args.extractor, args.timeout, args.retry_failed)
     print '[DONE]'
     
 if __name__ == '__main__':

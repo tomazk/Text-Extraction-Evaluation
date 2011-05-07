@@ -35,18 +35,31 @@ class LocalDatasetLoader(BaseDatasetLoader):
     '''Dataset loader using local filesystem'''
     
     @verify_local_dataset
-    def __init__(self, dataset_name):     
+    def __init__(self, dataset_name, load_failed = None):     
         self.dataset = dataset_name   
         # load meta data
         meta_filepath = get_local_path( dataset_name, 'meta.yaml')
         with open(meta_filepath, 'r') as f:
             self.meta_yaml = yaml.load(f.read())
             self._len = len(self.meta_yaml)
+            
+        if load_failed:
+            self._failed_list = ExtractionSummary(self.dataset) \
+                                .get_failed_ids(load_failed) 
+        else:
+            self._failed_list = None
+            
     
     def __iter__(self):
         '''DataInstance generator'''
         for dict in self.meta_yaml:
-            yield LocalDocument(self.dataset, **dict)
+            if self._failed_list != None:
+                if dict['id'] in self._failed_list:
+                    yield LocalDocument(self.dataset, **dict)
+                else:
+                    continue
+            else:
+                yield LocalDocument(self.dataset, **dict)
             
     def __len__(self):
         self._len
@@ -71,6 +84,7 @@ class LocalDocument(BaseDocument):
         self.dataset = dataset
         
         # instance attributes
+        self.id = kwargs.pop('id')
         self.raw_filename = kwargs.pop('raw')
         self.clean_filename = kwargs.pop('clean')
         self.url = kwargs.pop('url')
@@ -108,12 +122,19 @@ class ExtractionSummary(object):
             for e in extractor_list:
                 self._summary_structure[e.SLUG] = []
                 
-        if extractor_slug:
-            self.set_extractor(extractor_slug)
+        self.set_extractor(extractor_slug)
         
     def set_extractor(self, extractor_slug):
-        self.extractor_slug = extractor_slug
-        self._summary_structure[self.extractor_slug] = []
+        if extractor_slug:
+            self.extractor_slug = extractor_slug
+            self._summary_structure[self.extractor_slug] = []
+        else:
+            self.extractor_slug = None
+        
+    def get_failed_ids(self, extractor_slug):
+        if self.extractor_slug:
+            raise DataError('extractor_slug set - list of fails was reinitialized')
+        return [f['id'] for f in self._summary_structure[extractor_slug]]
         
     def add_fail(self, id, reason = None):
         if self.extractor_slug == None:
@@ -179,26 +200,26 @@ class LocalResultStorage(BaseResultStorage):
         except DataError as e:
             err_msg = 'Data related error: %r' % e
             logger.warning(err_msg)
-            self._summary.add_fail(document.raw_filename, err_msg)
+            self._summary.add_fail(document.id, err_msg)
         except ContentExtractorError as e:
             err_msg = 'Content extractor related error: %r' % e
             logger.warning(err_msg)
-            self._summary.add_fail(document.raw_filename, err_msg)
+            self._summary.add_fail(document.id, err_msg)
         except ExtractorError as e:
             err_msg = 'Extractor related error: %r' % e
             logger.warning(err_msg)
-            self._summary.add_fail(document.raw_filename, err_msg)
+            self._summary.add_fail(document.id, err_msg)
         except Exception as e:
             err_msg = 'Unknown error: %r' % e
             logger.warning(err_msg)
-            self._summary.add_fail(document.raw_filename, err_msg)
+            self._summary.add_fail(document.id, err_msg)
         else:
-            output_file = '%s.%s' % (document.raw_filename,self.extractor_cls.FORMAT)
+            output_file = '%s.%s' % (document.id,self.extractor_cls.FORMAT)
             with open(os.path.join(self._extractor_result_dir, output_file), 'w') as out:
                 out.write(result)
                 
     def fetch_result(self, document):
-        result_file = '%s.%s' % (document.raw_filename,self.extractor_cls.FORMAT)
+        result_file = '%s.%s' % (document.id,self.extractor_cls.FORMAT)
         result_file_path = os.path.join(self._extractor_result_dir, result_file)
         if not os.path.exists(result_file_path):
             raise DataError('result file %s does not exist' % result_file)
