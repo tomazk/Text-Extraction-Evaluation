@@ -253,9 +253,11 @@ class DiffbotExtractor(BaseExtractor):
     
     @classmethod
     def formatted_result(cls, result_string):
-        #TODO: append title
         js = json.loads(result_string, encoding = 'utf8')
-        return TextResultFormat(js['text'].encode('utf8'))
+        return TextResultFormat(
+            js.get('title','').encode('utf8') + ' ' +\
+            js['text'].encode('utf8')
+        )
     
 class ExtractivExtractor(BaseExtractor):
     '''Extractiv extractor'''
@@ -280,8 +282,10 @@ class ExtractivExtractor(BaseExtractor):
     @classmethod
     def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
-        #TODO: append title
-        return TextResultFormat(js['Document']['text'].encode('utf8'))
+        return TextResultFormat(
+            js['Document'].get('title','').encode('utf8') + ' ' +\
+            js['Document']['text'].encode('utf8')
+        )
         
 class RepustateExtractor(BaseExtractor):
     '''Repustate extractor'''
