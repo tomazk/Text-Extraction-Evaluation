@@ -101,7 +101,7 @@ class TextBasedResults(BaseEvalResults):
         results_list = [r[selector] for r in self.text_eval_results[extractor] \
             if (not math.isinf(r[selector])) and (not math.isnan(r[selector])) ]
         
-        # avarage
+        # average
         avg = sum(results_list) / float(len(results_list))
         
         # std deviation
@@ -252,7 +252,7 @@ class GoogleNewsFormat(ResultFormat):
         content_strings = []
         for ct in self._content_tags:
             content_strings.extend(ct.findAll(text=True))
-        self._content_string = ' '.join(map(lambda e: e.encode(encoding), content_strings))
+        self._content_string = ' '.join(map(lambda e: e.encode(encoding,'ignore'), content_strings))
         
     def get_word_seq(self):
         return _tokenize_text(self._content_string)

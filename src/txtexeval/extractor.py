@@ -74,14 +74,14 @@ class _ContentCheckMin(object):
     def _content_status(self):
         js = json.loads(self._content)
         if js['status'] == "ERROR":
-            raise ContentExtractorError(js['errorMsg'].encode('utf-8'))
+            raise ContentExtractorError(js['errorMsg'].encode('utf-8','ignore'))
         
 class _FormattedResultMin(object):
     
     @classmethod
     def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
-        return TextResultFormat(js['result'].encode('utf8'))
+        return TextResultFormat(js['result'].encode('utf8','ignore'))
         
 class BoilerpipeDefaultExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtractor):
     '''Boilerpipe default extractor '''
@@ -99,7 +99,7 @@ class BoilerpipeDefaultExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtrac
             settings.BOILERPIPE_API_ENDPOINT,
             data = {
                 "extractorType":self.__extractor_type,
-                "rawHtml": html.encode(self.data_instance.raw_encoding) 
+                "rawHtml": html.encode(self.data_instance.raw_encoding,'ignore') 
             },
             headers = {'Content-Type':'application/x-www-form-urlencoded'}
         )
@@ -128,7 +128,7 @@ class GooseExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtractor):
         html = self.data_instance.get_raw_html()
         req = Request(
             settings.GOOSE_API_ENDPOINT,
-            data = dict(rawHtml = html.encode(self.data_instance.raw_encoding)),
+            data = dict(rawHtml = html.encode(self.data_instance.raw_encoding,'ignore')),
             headers = {'Content-Type':'application/x-www-form-urlencoded'}
         )
         return req.post()
@@ -146,7 +146,7 @@ class MSSExtractor(BaseExtractor):
         req = Request(
             dict(settings.MSS_URL)['text'],
             #this implementation requires utf-8 encoded input
-            data = html.encode('utf-8'),
+            data = html.encode('utf-8','ignore'),
             headers= {'Content-Type': 'text/plain;charset=UTF-8'}
         )
         return req.post()
@@ -189,7 +189,7 @@ class NodeReadabilityExtractor(_FormattedResultMin,BaseExtractor):
         req = Request(
             settings.READABILITY_ENDPOINT,
             #this implementation requires utf-8 encoded input
-            data = html.encode('utf-8'),
+            data = html.encode('utf-8','ignore'),
             headers= {'Content-Type': 'text/plain;charset=UTF-8'}
         )
         return req.post() 
@@ -213,7 +213,7 @@ class AlchemyExtractor(BaseExtractor):
         req = Request(
             'http://access.alchemyapi.com/calls/html/HTMLGetText',
             data = {'apikey':settings.ALCHEMY_API_KEY,
-                    'html': html.encode(self.data_instance.raw_encoding),
+                    'html': html.encode(self.data_instance.raw_encoding,'ignore'),
                     'outputMode':'json'
             } 
             
@@ -223,12 +223,12 @@ class AlchemyExtractor(BaseExtractor):
     def _content_status(self):
         js = json.loads(self._content, encoding = 'utf8')
         if js['status'] == 'ERROR':
-            raise ContentExtractorError(js['statusInfo'].encode('utf8'))
+            raise ContentExtractorError(js['statusInfo'].encode('utf8','ignore'))
         
     @classmethod
     def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
-        return TextResultFormat(js['text'].encode('utf8'))
+        return TextResultFormat(js['text'].encode('utf8','ignore'))
         
 class DiffbotExtractor(BaseExtractor):
     '''Diffbot extractor'''
@@ -255,8 +255,8 @@ class DiffbotExtractor(BaseExtractor):
     def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
         return TextResultFormat(
-            js.get('title','').encode('utf8') + ' ' +\
-            js['text'].encode('utf8')
+            js.get('title','').encode('utf8','ignore') + ' ' +\
+            js['text'].encode('utf8','ignore')
         )
     
 class ExtractivExtractor(BaseExtractor):
@@ -272,7 +272,7 @@ class ExtractivExtractor(BaseExtractor):
         req = Request(
             'http://rest.extractiv.com/extractiv/',
             data = {'api_key':settings.EXTRACTIV_API_KEY,
-                    'content': html.encode(self.data_instance.raw_encoding),
+                    'content': html.encode(self.data_instance.raw_encoding,'ignore'),
                     'output_format':'json'
             } 
             
@@ -283,8 +283,8 @@ class ExtractivExtractor(BaseExtractor):
     def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
         return TextResultFormat(
-            js['Document'].get('title','').encode('utf8') + ' ' +\
-            js['Document']['text'].encode('utf8')
+            js['Document'].get('title','').encode('utf8','ignore') + ' ' +\
+            js['Document']['text'].encode('utf8','ignore')
         )
         
 class RepustateExtractor(BaseExtractor):
@@ -307,12 +307,12 @@ class RepustateExtractor(BaseExtractor):
     def _content_status(self):
         js = json.loads(self._content, encoding = 'utf8')
         if js['status'] != 'OK':
-            raise ContentExtractorError(js['status'].encode('utf8'))
+            raise ContentExtractorError(js['status'].encode('utf8','ignore'))
         
     @classmethod
     def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
-        return TextResultFormat(js['text'].encode('utf8'))
+        return TextResultFormat(js['text'].encode('utf8','ignore'))
     
 class ZemantaExtractor(BaseExtractor):
     '''Extractor used internally by Zemanta Ltd'''
@@ -323,7 +323,7 @@ class ZemantaExtractor(BaseExtractor):
     
     def extract(self):
         html = self.data_instance.get_raw_html()
-        html = html.encode(self.data_instance.raw_encoding)
+        html = html.encode(self.data_instance.raw_encoding,'ignore')
         cm = ClientManager()
         
         response = cm.extract(html, self.data_instance.raw_encoding)

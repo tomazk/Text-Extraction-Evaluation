@@ -10,7 +10,7 @@ from .thriftgen.ceservice import ExtractorService
 from .thriftgen.ceservice import ttypes
 
 import settings
-from ..common import execute_only_once
+#from ..common import execute_only_once
 credentials = dict(settings.ZEMANTA_THRIFT) 
 
 Response = namedtuple('Response', 'text error')
@@ -22,8 +22,7 @@ class ClientManager(object):
     def __init__(self, extractor = None):
         self.__dict__ = self.__internal_state
         self.set_client()
-        
-    @execute_only_once    
+          
     def set_client(self):
         self._transport = TTransport.TBufferedTransport(
             TSocket.TSocket(credentials['host'], credentials['port'])
@@ -48,4 +47,6 @@ class ClientManager(object):
                 text = response.body.encode('utf8')
             else:
                 error = 'ExtractorService.extract returned a response but the success flag was set to False'
+        finally:
+            self._transport.close()
         return Response(text, error)
