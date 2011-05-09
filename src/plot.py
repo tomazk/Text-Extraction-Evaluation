@@ -96,21 +96,26 @@ def extractor_stat_plot(dataset_name, extractor_slug):
     results_list_f1 = filter(non_inf_nan,[r[0] for r in extractor_results ])
     
     width = 0.1  # the width of the bars
-    ind = np.arange(0,1,0.1)
-    eq_count_prec = equidistant_count(0, 1, 0.1, results_list_prec)
-    eq_count_rec = equidistant_count(0, 1, 0.1, results_list_rec)
-    eq_count_f1 = equidistant_count(0, 1, 0.1, results_list_f1)
+    ind = np.arange(0,1,width)
+    n = len(ind)
+    eq_count_prec = equidistant_count(0, 1, width, results_list_prec)
+    eq_count_rec = equidistant_count(0, 1, width, results_list_rec)
+    eq_count_f1 = equidistant_count(0, 1, width, results_list_f1)
     
     # plotting
     fig = plt.figure()
     ax = fig.add_subplot(111, projection = '3d')
     
-    ax.bar( ind, eq_count_prec, zs = 0 ,zdir='y', width = width,color='b',
-                          linewidth = 0.5, alpha = 0.8)
-    ax.bar( ind, eq_count_rec, zs = 1 , zdir='y', width = width,color='m',
-                          linewidth = 0.5, alpha = 0.8)
-    ax.bar( ind, eq_count_f1, zs = 2 , zdir='y', width = width,color='c',
-                          linewidth = 0.5, alpha = 0.8)
+    ax.bar3d(ind,np.array([0]*n), np.array([0]*n) ,
+             dx = width, dy = width*2,dz=eq_count_prec,
+             color ='b', linewidth = 0.3, alpha = 0.4)
+    ax.bar3d(ind,np.array([1]*n), np.array([0]*n) ,
+             dx = width, dy = width*2,dz=eq_count_rec,
+             color ='m', linewidth = 0.3,alpha = 0.5)
+    ax.bar3d(ind,np.array([2]*n), np.array([0]*n) ,
+             dx = width, dy = width*2,dz=eq_count_f1,
+             color ='c', linewidth = 0.3,alpha = 0.8)
+
     
     plt.title(extractor_cls.NAME)
     ax.set_xlabel('limits')
@@ -151,7 +156,7 @@ def main():
         precision_recall_plot(args.dataset_name, output_img_name)
     elif args.action == 'extr_stat':
         # TODO: loop over all extractors
-        extractor_stat_plot(args.dataset_name, 'zemanta')
+        extractor_stat_plot(args.dataset_name, 'alchemy')
     
     print '[DONE]'
 
