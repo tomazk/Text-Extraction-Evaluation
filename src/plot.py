@@ -93,7 +93,7 @@ def extractor_stat_plot(dataset_name, extractor_slug):
     non_inf_nan = lambda r: (not math.isinf(r)) and (not math.isnan(r))
     results_list_prec = filter(non_inf_nan, [r[0] for r in extractor_results]) 
     results_list_rec = filter(non_inf_nan,[r[1] for r in extractor_results])
-    results_list_f1 = filter(non_inf_nan,[r[0] for r in extractor_results ])
+    results_list_f1 = filter(non_inf_nan,[r[2] for r in extractor_results ])
     
     width = 0.1  # the width of the bars
     ind = np.arange(0,1,width)
