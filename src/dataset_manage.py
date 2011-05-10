@@ -77,26 +77,26 @@ def _get_attribute(tag, name):
     except KeyError:
         return None
     
+regex_BEG = re.compile(r'(?P<text_tag>^(\s*)<(\s*)text((\s*)(id|title|encoding)(\s*)=(\s*)"(.*)")*(\s*)>)')
+regex_END = re.compile(r'(?P<closing_text_tag><(\s*)/(\s*)text(\s*)>(.*)$)')
 def _remove_text_tag(html_string, filename):
     # Cleaneval has a <text> tag that wraps the whole html structure. This 
     # function removes it with a pessimistic regular expression because we don't 
     # want to mess with the rest of the structure with a parser
     
     # remove <text> at the beginning
-    regex_beg = re.compile(r'(?P<text_tag>^(\s*)<(\s*)text((\s*)(id|title|encoding)(\s*)=(\s*)"(.*)")*(\s*)>)')
-    match_start = regex_beg.match(html_string)
+    match_start = regex_BEG.match(html_string)
     if match_start:
         logger.debug('removing text tag in %s: %s', filename, match_start.group('text_tag'))
-        html_string = regex_beg.sub('', html_string)
+        html_string = regex_BEG.sub('', html_string)
     else:
         raise PreprocessingError('no starting text tag in %s' % filename)
 
     # remove </text>
-    regex_end = re.compile(r'(?P<closing_text_tag><(\s*)/(\s*)text(\s*)>(.*)$)')
-    match_end = regex_end.search(html_string)
+    match_end = regex_END.search(html_string)
     if match_end:
         logger.debug('removing closing text tag in %s: %s', filename, match_end.group('closing_text_tag'))
-        html_string = regex_end.sub('', html_string)
+        html_string = regex_END.sub('', html_string)
     else:
         raise PreprocessingError('no closing text tag in %s' % filename)
     
@@ -139,6 +139,8 @@ def _get_charset(html_string, raw_filename):
     return charset
 
 def _get_safe_encoding_name(encoding):
+    if encoding == None:
+        raise MetaGeneratorError('no encoding given')
     try:
         codec = codecs.lookup(encoding)
     except LookupError:
@@ -147,7 +149,8 @@ def _get_safe_encoding_name(encoding):
         return codec.name
     
 def _skip_file(regex, raw_filename):
-    # valiadate raw filenames
+    # if filename does not match the given regular expr. 
+    # then raise the skip trigger
     if not regex.match(raw_filename):
         logger.debug('skipping file %s', raw_filename)
         raise SkipTrigger
@@ -174,6 +177,7 @@ def dump_meta_data(method):
 class BaseProcessor(object):
     
     def __init__(self, output_dir, dataset_name):   
+        self.dataset_name = dataset_name
         self._dataset_dir = get_local_path(dataset_name)
         self._output_dir = output_dir
         self.meta_data_list = [] # list to be serialized
@@ -242,7 +246,7 @@ class CleanevalProcessor(BaseProcessor):
         
         raw_filename_path = os.path.join(self._dataset_dir, 'raw', raw_filename)
         backup_path = raw_filename_path + '.backup'
-        logger.info('renaming %s to %s', raw_filename, raw_filename + '.backup')
+        logger.debug('renaming %s to %s', raw_filename, raw_filename + '.backup')
         os.rename(raw_filename_path, backup_path)
     
     @dump_meta_data
@@ -253,16 +257,23 @@ class CleanevalProcessor(BaseProcessor):
             html_string = f.read()
             
             # check for an existing clean file counterpart
-            clean_filename = raw_filename.replace('.html.backup', '') + '-cleaned.txt'
+            # FIXME: this is a hack, because cleaneval-final uses only [number].txt
+            #        and [number]-cleaned.txt in cleaneval-dev
+            if self.dataset_name == 'cleaneval-final':
+                clean_filename = self.re_BACK.match(raw_filename).group('id') + '.txt' 
+            else:
+                clean_filename = self.re_BACK.match(raw_filename).group('id') + '-cleaned.txt' 
             if not os.path.exists(os.path.join(self._dataset_dir, 'clean', clean_filename )):
-                raise MetaGeneratorError('No existing clean file counterpart for %s' % raw_filename)
+                msg = 'No existing clean file counterpart for %s' % raw_filename
+                logger.warning(msg)
+                raise SkipTrigger(msg)
             
             # get meta data from <text ...> tag
             soup = BeautifulSoup(html_string)
             text_tag = soup.find('text')
             if text_tag == None:
                 raise MetaGeneratorError('No <text> tag in %s' % raw_filename)
-            encoding = text_tag['encoding']
+            encoding = text_tag.get('encoding',None)
             
             # extract dataset specific meta-data and store it into a dict with
             # keys id, title, encoding
@@ -291,7 +302,7 @@ class CleanevalProcessor(BaseProcessor):
                 # all cleaned text files are utf-8 encoded
                 clean_encoding = 'utf-8',
                 # we'll be generating [number].html in the preprocessing phase
-                raw = raw_filename.replace('.backup', 'iii'), 
+                raw = raw_filename.replace('.backup', ''), 
                 clean = clean_filename,
                 meta = cleaneval_specific
             ))
@@ -313,7 +324,7 @@ class CleanevalProcessor(BaseProcessor):
                 
             elif (not soup.find('html')) or (not soup.find('body')):
                 # really weird case
-                raise PreprocessingError('this file has html tag or body tag but not both') 
+                logger.warning('%s has html tag or body tag but not both', raw_filename) 
             else:
                 logger.info('no tag appending on %s', raw_filename)
             
