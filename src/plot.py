@@ -95,7 +95,7 @@ def extractor_stat_plot(dataset_name, extractor_slug):
     results_list_rec = filter(non_inf_nan,[r[1] for r in extractor_results])
     results_list_f1 = filter(non_inf_nan,[r[2] for r in extractor_results ])
     
-    width = 0.1  # the width of the bars
+    width = 0.05  # the width of the bars
     ind = np.arange(0,1,width)
     n = len(ind)
     eq_count_prec = equidistant_count(0, 1, width, results_list_prec)
@@ -156,7 +156,7 @@ def main():
         precision_recall_plot(args.dataset_name, output_img_name)
     elif args.action == 'extr_stat':
         # TODO: loop over all extractors
-        extractor_stat_plot(args.dataset_name, 'alchemy')
+        extractor_stat_plot(args.dataset_name, 'zemanta')
     
     print '[DONE]'
 
