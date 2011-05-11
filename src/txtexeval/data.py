@@ -209,11 +209,15 @@ class LocalResultStorage(BaseResultStorage):
             err_msg = 'Extractor related error: %r' % e
             logger.warning(err_msg)
             self._summary.add_fail(document.id, err_msg)
+        except NotImplementedError:
+            logger.debug('extraction method is not implemented - do nothing')
+            pass
         except Exception as e:
             err_msg = 'Unknown error: %r' % e
             logger.warning(err_msg)
             self._summary.add_fail(document.id, err_msg)
         else:
+            logger.debug('extracted content from %s', document.id)
             output_file = '%s.%s' % (document.id,self.extractor_cls.FORMAT)
             with open(os.path.join(self._extractor_result_dir, output_file), 'w') as out:
                 out.write(result)

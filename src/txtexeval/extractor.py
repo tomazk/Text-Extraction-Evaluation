@@ -6,7 +6,7 @@ import readability
 import settings
 from .util import Request, html_to_text
 from .util.zemanta.client import ClientManager
-from .evaluation import TextResultFormat
+from .evaluation import TextResultFormat, CleanEvalFormat
 
 class ExtractorError(Exception):
     '''Extractor failed on the network layer'''
@@ -334,8 +334,35 @@ class ZemantaExtractor(BaseExtractor):
     @classmethod
     def formatted_result(cls, result_string):
         return TextResultFormat(result_string)
-        
-        
+    
+class NCleanerStdEnExtractor(BaseExtractor):
+    '''NCleaner extractor using the standard english n-gram model'''
+    
+    NAME = 'NCleaner En'
+    SLUG = 'ncleaner_en'
+    FORMAT = 'txt'
+    
+    def extract(self):
+        '''
+        This method is not implemented (for now), because ncleaner
+        comes with a handy command line tool that trivially executes  
+        the extraction task for us.
+        '''
+        raise NotImplementedError
+    
+    @classmethod
+    def formatted_result(cls, result_string):
+        # ncleaner uses the cleaneval style format for its output
+        return CleanEvalFormat(result_string)
+    
+class NCleanerNonLexExtractor(NCleanerStdEnExtractor):
+    '''NCleaner extractor using the non lexical n-gram model'''
+    
+    NAME = 'NCleaner NonLex'
+    SLUG = 'ncleaner_nonlex'
+    FORMAT = 'txt'
+    
+    
 # list of all extractor classes         
 extractor_list = (
     BoilerpipeDefaultExtractor,
@@ -349,6 +376,8 @@ extractor_list = (
     ExtractivExtractor,
     RepustateExtractor,
     ZemantaExtractor,
+    NCleanerStdEnExtractor,
+    NCleanerNonLexExtractor,
 )
 
 def get_extractor_cls(extractor_slug):

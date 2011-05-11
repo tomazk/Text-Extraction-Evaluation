@@ -25,7 +25,6 @@ def local_extract(dataset_name, extractor_slug, timeout, retry_failed):
     logger.info('started extracting content from %s dataset using %s', dataset_name, ex.NAME)
     for doc in loader:
         storage.push_result(doc)
-        logger.debug('extracted content from %s', doc.raw_filename)
         if timeout:
             time.sleep(timeout)
         
