@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import settings
 from txtexeval.evaluation import TextBasedResults
-from txtexeval.extractor import extractor_list, get_extractor_cls
+from txtexeval.extractor import extractor_list
 
 def precision_recall_plot(dataset_name, img_name):
 
@@ -78,66 +78,74 @@ def equidistant_count(start, stop, step , list):
         bmap = map(lambda x: 1 if low <= x < up else 0 , list)
         count.append(sum(bmap))
     return tuple(count)
+
+def resize_axis_tick_labels(axis, size = 'xx-small'):
+    for label in axis.get_ticklabels():
+        label.set_size(size)
         
-    
-def extractor_stat_plot(dataset_name, extractor_slug):
-    plt.clf() # clear current figure
-    extractor_cls = get_extractor_cls(extractor_slug)
+def extractor_stat_plot(dataset_name, output_img_name):
+    fig = plt.figure()
     
     # get results and repackage the data
     txt_results = TextBasedResults()
     txt_results.load(dataset_name)
     txt_results.print_results()
-    extractor_results = txt_results.get_results()[extractor_cls.NAME]
     
-    non_inf_nan = lambda r: (not math.isinf(r)) and (not math.isnan(r))
-    results_list_prec = filter(non_inf_nan, [r[0] for r in extractor_results]) 
-    results_list_rec = filter(non_inf_nan,[r[1] for r in extractor_results])
-    results_list_f1 = filter(non_inf_nan,[r[2] for r in extractor_results ])
+    for ex_index,extractor_cls in enumerate(extractor_list):
     
-    width = 0.05  # the width of the bars
-    ind = np.arange(0,1,width)
-    n = len(ind)
-    eq_count_prec = equidistant_count(0, 1, width, results_list_prec)
-    eq_count_rec = equidistant_count(0, 1, width, results_list_rec)
-    eq_count_f1 = equidistant_count(0, 1, width, results_list_f1)
+        # repackage results
+        extractor_results = txt_results.get_results()[extractor_cls.NAME]
+        non_inf_nan = lambda r: (not math.isinf(r)) and (not math.isnan(r))
+        results_list_prec = filter(non_inf_nan, [r[0] for r in extractor_results]) 
+        results_list_rec = filter(non_inf_nan,[r[1] for r in extractor_results])
+        results_list_f1 = filter(non_inf_nan,[r[2] for r in extractor_results ])
+        
+        width = 0.05  # the width of the bars
+        ind = np.arange(0,1,width)
+        n = len(ind)
+        eq_count_prec = equidistant_count(0, 1, width, results_list_prec)
+        eq_count_rec = equidistant_count(0, 1, width, results_list_rec)
+        eq_count_f1 = equidistant_count(0, 1, width, results_list_f1)
+        
+        # plotting
+        ax = fig.add_subplot(5,3,ex_index+1,projection = '3d')
+        
+        ax.bar3d(ind,np.array([0]*n), np.array([0]*n) ,
+                 dx = width, dy = width*2,dz=eq_count_prec,
+                 color ='b', linewidth = 0.3, alpha = 0.4)
+        ax.bar3d(ind,np.array([1]*n), np.array([0]*n) ,
+                 dx = width, dy = width*2,dz=eq_count_rec,
+                 color ='c', linewidth = 0.3,alpha = 0.5)
+        ax.bar3d(ind,np.array([2]*n), np.array([0]*n) ,
+                 dx = width, dy = width*2,dz=eq_count_f1,
+                 color ='m', linewidth = 0.3,alpha = 0.8)
     
-    # plotting
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection = '3d')
-    
-    ax.bar3d(ind,np.array([0]*n), np.array([0]*n) ,
-             dx = width, dy = width*2,dz=eq_count_prec,
-             color ='b', linewidth = 0.3, alpha = 0.4)
-    ax.bar3d(ind,np.array([1]*n), np.array([0]*n) ,
-             dx = width, dy = width*2,dz=eq_count_rec,
-             color ='m', linewidth = 0.3,alpha = 0.5)
-    ax.bar3d(ind,np.array([2]*n), np.array([0]*n) ,
-             dx = width, dy = width*2,dz=eq_count_f1,
-             color ='c', linewidth = 0.3,alpha = 0.8)
-
-    
-    plt.title(extractor_cls.NAME)
-    ax.set_xlabel('limits')
-    ax.set_zlabel('no. of instances')
-    ax.yaxis.set_ticks([])
-    ax.grid(True, alpha = 0.7)
-    
+        
+        ax.set_title(extractor_cls.NAME, size = 'small')
+        ax.set_xlabel('\nlimits',size = 'x-small', linespacing=2)
+        ax.set_zlabel('\nno. of instances',size = 'x-small', linespacing=2)
+        ax.yaxis.set_ticks([])
+        resize_axis_tick_labels(ax.xaxis)
+        resize_axis_tick_labels(ax.zaxis)
+        ax.grid(True, alpha = 0.7)
+        
     # with 3d plotting we need to use proxy artist because legends
     # are not supported
     blue = plt.Rectangle((0, 0), 1, 1, fc="b") # proxys
     cyan = plt.Rectangle((0, 0), 1, 1, fc="c")
     mag = plt.Rectangle((0, 0), 1, 1, fc="m")
-    plt.legend(      (blue,mag,cyan),
+    fig.legend(      (blue,cyan,mag),
                      ('precision','recall','f1 score'),
                      fancybox = True,
                      prop = dict(size='x-small')
     )
+    w,h = fig.get_size_inches()
+    fig.set_size_inches( w *1.5, h*2.5)
+    fig.subplots_adjust( wspace=0.025, hspace=0.15)
     
     # save plot
-    out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', 
-                            '%s.png' % extractor_slug)
-    plt.savefig(out_path)
+    out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', output_img_name)
+    fig.savefig(out_path)
     
     
  
@@ -151,12 +159,11 @@ def parse_args():
 def main():
     args = parse_args()
     
+    output_img_name = args.output_img_name or '%s.png' % args.dataset_name
     if args.action == 'dataset_stat':
-        output_img_name = args.output_img_name or '%s.png' % args.dataset_name
         precision_recall_plot(args.dataset_name, output_img_name)
     elif args.action == 'extr_stat':
-        # TODO: loop over all extractors
-        extractor_stat_plot(args.dataset_name, 'zemanta')
+        extractor_stat_plot(args.dataset_name, output_img_name)
     
     print '[DONE]'
 
