@@ -81,7 +81,6 @@ class BaseEvalResults(object):
     def print_results(self):
         '''Print results to stdout'''
         pass
-    
             
 class TextBasedResults(BaseEvalResults):
             
@@ -91,15 +90,19 @@ class TextBasedResults(BaseEvalResults):
     
     def append_result(self, result):
         self.text_eval_results[self._extractor].append(result)
+        
+    def filtered_results(self, extractor_name):
+        result_filter = lambda r: \
+           (not math.isinf(r.precision)) and \
+           (not math.isinf(r.recall)) and \
+           (not math.isinf(r.f1_score))
+        return filter(result_filter, self.text_eval_results[extractor_name])
     
-    def _statistics(self, extractor, stat_typ): # DRY helper
+    def _statistics(self, extractor_name, stat_typ): # DRY helper
         if stat_typ == 'precision':  selector = 0
         elif stat_typ == 'recall':   selector = 1
         elif stat_typ == 'f1_score': selector = 2
-        
-        # yes ... there is a rationale behind this
-        results_list = [r[selector] for r in self.text_eval_results[extractor] \
-            if (not math.isinf(r[selector])) and (not math.isnan(r[selector])) ]
+        results_list = [r[selector] for r in  self.filtered_results(extractor_name)]
         
         # average
         avg = sum(results_list) / float(len(results_list))
@@ -110,17 +113,17 @@ class TextBasedResults(BaseEvalResults):
         
         return avg, stddev, len(results_list)
       
-    def precision_statistics(self, extractor):
+    def precision_statistics(self, extractor_name):
         '''Return a tuple containing (avg, stddev)'''
-        return self._statistics(extractor, 'precision')
+        return self._statistics(extractor_name, 'precision')
     
-    def recall_statistics(self, extractor):
+    def recall_statistics(self, extractor_name):
         '''Return a tuple containing (avg, stddev)'''
-        return self._statistics(extractor, 'recall')
+        return self._statistics(extractor_name, 'recall')
     
-    def f1score_statistics(self, extractor):
+    def f1score_statistics(self, extractor_name):
         '''Return a tuple containing (avg, stddev)'''
-        return self._statistics(extractor, 'f1_score')
+        return self._statistics(extractor_name, 'f1_score')
         
     def print_results(self):
         print 'results based on text based evaluation'
