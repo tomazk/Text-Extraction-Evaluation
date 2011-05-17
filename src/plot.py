@@ -155,12 +155,12 @@ def dataset_contents_plot(dataset_name, img_name):
     # package data
     extractor_slugs = tuple( [e.SLUG for e in extractor_list] )
     package = [
-        ('|rel| = 0','c', [ txt_results.result_contents(ex).rel_empty for ex in extractor_slugs] ),
-        ('|rel intersect ret| = 0','m', [ txt_results.result_contents(ex).rel_ret_empty for ex in extractor_slugs] ),
-        ('|ret| = 0','y', [ txt_results.result_contents(ex).ret_empty for ex in extractor_slugs] ),
-        ('missmatch','b', [ txt_results.result_contents(ex).missmatch for ex in extractor_slugs] ),
-        ('failed','r', [ txt_results.result_contents(ex).fail for ex in extractor_slugs] ),
-        ('successful','g', [ txt_results.result_contents(ex).succ for ex in extractor_slugs] ),
+        ('|rel| = 0','#9DFADE', [ txt_results.result_contents(ex).rel_empty for ex in extractor_slugs] ),
+        ('|rel intersect ret| = 0','#3C70A3', [ txt_results.result_contents(ex).rel_ret_empty for ex in extractor_slugs] ),
+        ('|ret| = 0','#5CCBED', [ txt_results.result_contents(ex).ret_empty for ex in extractor_slugs] ),
+        ('missmatch','#A76CF5', [ txt_results.result_contents(ex).missmatch for ex in extractor_slugs] ),
+        ('failed','#C43156', [ txt_results.result_contents(ex).fail for ex in extractor_slugs] ),
+        ('successful','#31C460', [ txt_results.result_contents(ex).succ for ex in extractor_slugs] ),
     ]
     num_of_extractors = len(extractor_slugs)
     ind = np.arange(num_of_extractors)  # the x locations for the groups
@@ -178,7 +178,7 @@ def dataset_contents_plot(dataset_name, img_name):
     bottom_y = np.zeros(num_of_extractors)
     for pdata in package:
         ax1.bar(ind, pdata[2],width,bottom = bottom_y,color=pdata[1], 
-                ecolor ='g', linewidth = 0.2, alpha = 0.8)
+                ecolor ='g', linewidth = 0.2, alpha = 0.95)
         bottom_y += pdata[2]
     # TODO:
     #ax1.plot(np.arange(num_of_extractors+2), [txt_results.dataset_len] * (num_of_extractors+2), 
@@ -191,7 +191,7 @@ def dataset_contents_plot(dataset_name, img_name):
     del package[-1]
     for pdata in package:
         ax2.bar(ind, pdata[2],width,bottom = bottom_y,color=pdata[1], 
-                ecolor ='g', linewidth = 0.2, alpha = 0.8)
+                ecolor ='g', linewidth = 0.2, alpha = 0.95)
         bottom_y += pdata[2]
     
     # xticks labels
