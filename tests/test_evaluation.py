@@ -249,7 +249,7 @@ class TestTextBasedResults(unittest2.TestCase):
         self.results.text_eval_results['e1'] = []
         
     def test_results_contents(self):
-        contents = self.results.results_contents('e1')
+        contents = self.results.result_contents('e1')
         self.assertEqual(contents.fail, 2)
         self.assertEqual(contents.succ, 4)
         self.assertEqual(contents.rel_empty, 2)

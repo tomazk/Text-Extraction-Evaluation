@@ -85,7 +85,7 @@ class Result(object):
     def succ(self):
         return 0 < self.f1_score <= 1
         
-class ResultsContents(object):
+class ResultContents(object):
     
     def __init__(self,succ,rel_empty,rel_ret_empty,ret_empty,missmatch,dataset_len):
         assert dataset_len >= succ+rel_empty+rel_ret_empty+ret_empty+missmatch
@@ -135,7 +135,7 @@ class TextBasedResults(object):
         result_filter = lambda r: r.succ
         return filter(result_filter, self.text_eval_results[extractor])
     
-    def results_contents(self, extractor):
+    def result_contents(self, extractor):
         results = self.text_eval_results[extractor]
         
         succ = len(self.filtered_results(extractor))
@@ -144,7 +144,7 @@ class TextBasedResults(object):
         rel_ret_empty = len(filter(lambda r: r.relevant_retrieved_empty, results))
         missmatch     = len(filter(lambda r: r.missmatch, results))
     
-        return ResultsContents(succ, rel_empty, rel_ret_empty, ret_empty,
+        return ResultContents(succ, rel_empty, rel_ret_empty, ret_empty,
                                 missmatch, self.dataset_len)
     
     def _statistics(self, extractor, stat_typ): # DRY helper
@@ -180,7 +180,7 @@ class TextBasedResults(object):
             print 'avg. F1 score:  %f   stddev: %f' \
              % self.f1score_statistics(extractor) 
              
-            rcontents = self.results_contents(extractor) 
+            rcontents = self.result_contents(extractor) 
             print 'relevant  empty:   %d' % rcontents.rel_empty
             print 'retrieved empty:   %d' % rcontents.ret_empty
             print 'rel intersect ret: %d' % rcontents.rel_ret_empty

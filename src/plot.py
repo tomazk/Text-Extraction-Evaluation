@@ -26,7 +26,6 @@ def precision_recall_plot(dataset_name, img_name):
     )
     
     bar_color = ('b','c','m')
-    
     for i,pdata in enumerate(packaged_data):
     
         # package plotting values 
@@ -48,7 +47,7 @@ def precision_recall_plot(dataset_name, img_name):
         extractor_names = [ get_extractor_cls(e).NAME for e in extractor_slugs]
         plt.title(pdata[0])
         plt.xticks(ind+width/2., extractor_names, size = 'xx-small', rotation = 'vertical')
-        plt.legend( (rects_avg[0],),
+        plt.legend(  (rects_avg[0],),
                      ('avg',),
                      fancybox = True,
                      prop = dict(size='x-small')
@@ -84,7 +83,7 @@ def resize_axis_tick_labels(axis, size = 'xx-small'):
     for label in axis.get_ticklabels():
         label.set_size(size)
         
-def extractor_stat_plot(dataset_name, output_img_name):
+def extractor_stat_plot(dataset_name, img_name):
     fig = plt.figure()
     
     # get results and repackage the data
@@ -131,9 +130,9 @@ def extractor_stat_plot(dataset_name, output_img_name):
         
     # with 3d plotting we need to use proxy artist because legends
     # are not supported
-    blue = plt.Rectangle((0, 0), 1, 1, fc="b") # proxys
-    cyan = plt.Rectangle((0, 0), 1, 1, fc="c")
-    mag = plt.Rectangle((0, 0), 1, 1, fc="m")
+    blue = plt.Rectangle((0, 0), 1, 1, fc='b') # proxys
+    cyan = plt.Rectangle((0, 0), 1, 1, fc='c')
+    mag = plt.Rectangle((0, 0), 1, 1, fc='m')
     fig.legend(      (blue,cyan,mag),
                      ('precision','recall','f1 score'),
                      fancybox = True,
@@ -144,14 +143,61 @@ def extractor_stat_plot(dataset_name, output_img_name):
     fig.subplots_adjust( wspace=0.025, hspace=0.15)
     
     # save plot
-    out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', output_img_name)
+    out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', img_name)
     fig.savefig(out_path)
     
+def dataset_contents_plot(dataset_name, img_name):
+    # get results
+    txt_results = TextBasedResults()
+    txt_results.load(dataset_name)
+    txt_results.print_results()
     
- 
+    # package data
+    extractor_slugs = tuple( [e.SLUG for e in extractor_list] )
+    package = (
+        ('successful','g', [ txt_results.result_contents(ex).succ for ex in extractor_slugs] ),
+        ('failed','r', [ txt_results.result_contents(ex).fail for ex in extractor_slugs] ),
+        ('missmatch','b', [ txt_results.result_contents(ex).missmatch for ex in extractor_slugs] ),
+        ('|rel| = 0','c', [ txt_results.result_contents(ex).rel_empty for ex in extractor_slugs] ),
+        ('|rel intersect ret| = 0','m', [ txt_results.result_contents(ex).rel_ret_empty for ex in extractor_slugs] ),
+        ('|ret| = 0','y', [ txt_results.result_contents(ex).ret_empty for ex in extractor_slugs] ),
+    )
+    num_of_extractors = len(extractor_slugs)
+    ind = np.arange(num_of_extractors)  # the x locations for the groups
+    width = 0.6
+    
+    bottom_y = np.zeros(num_of_extractors)
+    for pdata in package:
+        plt.bar(ind, pdata[2],width,bottom = bottom_y,color=pdata[1], 
+                ecolor ='g', linewidth = 0.2, alpha = 0.8)
+        bottom_y += pdata[2]
+    
+    # legend
+    plt.legend(      [plt.Rectangle((0, 0), 1, 1, fc=p[1]) for p in package],
+                     [p[0] for p in package],
+                     fancybox = True,
+                     prop = dict(size='x-small'),
+                     loc = 0,
+                     
+    )
+    # lables and titles
+    extractor_names = [ get_extractor_cls(e).NAME for e in extractor_slugs]
+    plt.xticks(ind+width/2., extractor_names, size = 'xx-small', rotation = 'vertical')
+    plt.title('Result contents')
+    plt.grid(True, alpha = 0.5)
+    
+    fig = plt.gcf()
+    w,h = fig.get_size_inches()
+    fig.set_size_inches( w, h*1.5)
+    fig.subplots_adjust( bottom = 0.1)
+    
+    # output 
+    out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', img_name)
+    plt.savefig(out_path)
+    
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Plotting tool')
-    parser.add_argument('action', choices = ('dataset_stat', 'extr_stat'))
+    parser.add_argument('action', choices = ('dataset_stat', 'extr_stat','contents'))
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-o','--output_img_name', type=str, help = 'name of the output image')
     return parser.parse_args()
@@ -164,6 +210,8 @@ def main():
         precision_recall_plot(args.dataset_name, output_img_name)
     elif args.action == 'extr_stat':
         extractor_stat_plot(args.dataset_name, output_img_name)
+    elif args.action == 'contents':
+        dataset_contents_plot(args.dataset_name, output_img_name)
     
     print '[DONE]'
 
