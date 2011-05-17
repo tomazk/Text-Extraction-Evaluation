@@ -154,46 +154,66 @@ def dataset_contents_plot(dataset_name, img_name):
     
     # package data
     extractor_slugs = tuple( [e.SLUG for e in extractor_list] )
-    package = (
-        ('successful','g', [ txt_results.result_contents(ex).succ for ex in extractor_slugs] ),
-        ('failed','r', [ txt_results.result_contents(ex).fail for ex in extractor_slugs] ),
-        ('missmatch','b', [ txt_results.result_contents(ex).missmatch for ex in extractor_slugs] ),
+    package = [
         ('|rel| = 0','c', [ txt_results.result_contents(ex).rel_empty for ex in extractor_slugs] ),
         ('|rel intersect ret| = 0','m', [ txt_results.result_contents(ex).rel_ret_empty for ex in extractor_slugs] ),
         ('|ret| = 0','y', [ txt_results.result_contents(ex).ret_empty for ex in extractor_slugs] ),
-    )
+        ('missmatch','b', [ txt_results.result_contents(ex).missmatch for ex in extractor_slugs] ),
+        ('failed','r', [ txt_results.result_contents(ex).fail for ex in extractor_slugs] ),
+        ('successful','g', [ txt_results.result_contents(ex).succ for ex in extractor_slugs] ),
+    ]
     num_of_extractors = len(extractor_slugs)
     ind = np.arange(num_of_extractors)  # the x locations for the groups
     width = 0.6
     
+    fig = plt.gcf()
+    fig.legend(      [plt.Rectangle((0, 0), 1, 1, fc=p[1]) for p in package],
+                     [p[0] for p in package],
+                     fancybox = True,
+                     prop = dict(size='x-small'),                     
+    )
+    
+    # with successful instances
+    ax1 = plt.subplot(121)
     bottom_y = np.zeros(num_of_extractors)
     for pdata in package:
-        plt.bar(ind, pdata[2],width,bottom = bottom_y,color=pdata[1], 
+        ax1.bar(ind, pdata[2],width,bottom = bottom_y,color=pdata[1], 
+                ecolor ='g', linewidth = 0.2, alpha = 0.8)
+        bottom_y += pdata[2]
+    # TODO:
+    #ax1.plot(np.arange(num_of_extractors+2), [txt_results.dataset_len] * (num_of_extractors+2), 
+    #         linestyle = ':', color = 'k', linewidth = 2,
+    #         label = '%d documents'% txt_results.dataset_len )
+        
+    # without successful instances
+    ax2 = plt.subplot(122)
+    bottom_y = np.zeros(num_of_extractors)
+    del package[-1]
+    for pdata in package:
+        ax2.bar(ind, pdata[2],width,bottom = bottom_y,color=pdata[1], 
                 ecolor ='g', linewidth = 0.2, alpha = 0.8)
         bottom_y += pdata[2]
     
-    # legend
-    plt.legend(      [plt.Rectangle((0, 0), 1, 1, fc=p[1]) for p in package],
-                     [p[0] for p in package],
-                     fancybox = True,
-                     prop = dict(size='x-small'),
-                     loc = 0,
-                     
-    )
-    # lables and titles
+    # xticks labels
     extractor_names = [ get_extractor_cls(e).NAME for e in extractor_slugs]
-    plt.xticks(ind+width/2., extractor_names, size = 'xx-small', rotation = 'vertical')
-    plt.title('Result contents')
-    plt.grid(True, alpha = 0.5)
+    ax1.set_xticks(ind+width/2.)
+    ax1.set_xticklabels(extractor_names, size = 'xx-small', rotation = 'vertical')
+    ax2.set_xticks(ind+width/2.)
+    ax2.set_xticklabels(extractor_names, size = 'xx-small', rotation = 'vertical')
     
-    fig = plt.gcf()
+    # grid settings
+    fig.suptitle('Result contents')
+    ax1.grid(True, alpha = 0.5)
+    ax2.grid(True, alpha = 0.5)
+    
+    # adjustment
     w,h = fig.get_size_inches()
-    fig.set_size_inches( w, h*1.5)
-    fig.subplots_adjust( bottom = 0.1)
+    fig.set_size_inches( w*1.5, h*1.5)
+    fig.subplots_adjust( bottom = 0.2)
     
     # output 
     out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', img_name)
-    plt.savefig(out_path)
+    fig.savefig(out_path)
     
 def parse_args():
     parser = argparse.ArgumentParser(description = 'Plotting tool')
