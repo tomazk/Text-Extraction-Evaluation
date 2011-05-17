@@ -187,7 +187,7 @@ class TextBasedResults(object):
             print 'success:           %d' % rcontents.succ
             print 'missmatch:         %d' % rcontents.missmatch
             print 'fail:              %d' % rcontents.fail
-            print 'dataset_len=%d sum=%d' % self.dataset_len
+            print 'dataset_len=%d' % self.dataset_len
                                              
 # evaluators    
 
