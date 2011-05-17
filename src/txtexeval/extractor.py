@@ -317,7 +317,7 @@ class RepustateExtractor(BaseExtractor):
 class ZemantaExtractor(BaseExtractor):
     '''Extractor used internally by Zemanta Ltd'''
     
-    NAME = 'Zemanta'
+    NAME = 'Zextractor'
     SLUG = 'zemanta'
     FORMAT = 'txt'
     
