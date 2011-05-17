@@ -49,7 +49,6 @@ class LocalDatasetLoader(BaseDatasetLoader):
         else:
             self._failed_list = None
             
-    
     def __iter__(self):
         '''DataInstance generator'''
         for dict in self.meta_yaml:
@@ -62,7 +61,7 @@ class LocalDatasetLoader(BaseDatasetLoader):
                 yield LocalDocument(self.dataset, **dict)
             
     def __len__(self):
-        self._len
+        return self._len
     
 
 class BaseDocument(object):

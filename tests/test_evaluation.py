@@ -7,6 +7,7 @@ import unittest2
 from txtexeval.util import html_to_text
 from txtexeval.evaluation import _tokenize_text, _bow
 from txtexeval.evaluation import TextOnlyEvaluator
+from txtexeval.evaluation import TextBasedResults, Result
 from txtexeval.evaluation import BaseResultFormat, TextResultFormat, \
                                  CleanEvalFormat,GoogleNewsFormat
                                  
@@ -222,6 +223,77 @@ class TestTextEvaluator(unittest2.TestCase):
         self.assertAlmostEqual(r.recall, 1)
         self.assertAlmostEqual(r.f1_score, 1)
         
+class TestTextBasedResults(unittest2.TestCase):
+    
+    def setUp(self):
+        self.results = TextBasedResults('e1')
+        # Result(precision, recall, f1_score, id)
+        self.results.add_result(Result(0,0,float('inf'),None))
+        
+        self.results.add_result(Result(float('inf'),0,float('nan'),None))
+        self.results.add_result(Result(float('inf'),0,float('nan'),None))
+        
+        self.results.add_result(Result(0,float('inf'),float('nan'),None))
+        self.results.add_result(Result(0,float('inf'),float('nan'),None))
+        
+        self.results.add_result(Result(float('inf'),float('inf'),float('nan'),None))
+        
+        self.results.add_result(Result(0.2,0.2,0.2,None))
+        self.results.add_result(Result(0.2,0.2,0.2,None))
+        self.results.add_result(Result(0.2,0.2,0.2,None))
+        self.results.add_result(Result(0.2,0.2,0.2,None))
+        
+        self.results.dataset_len = 12
+        
+    def tearDown(self):
+        self.results.text_eval_results['e1'] = []
+        
+    def test_results_contents(self):
+        contents = self.results.results_contents('e1')
+        self.assertEqual(contents.fail, 2)
+        self.assertEqual(contents.succ, 4)
+        self.assertEqual(contents.rel_empty, 2)
+        self.assertEqual(contents.ret_empty, 2)
+        self.assertEqual(contents.rel_ret_empty, 1)
+        self.assertEqual(contents.missmatch, 1)
+        
+    def test_result_filter(self):
+        fr = self.results.filtered_results('e1')
+        self.assertEqual(len(fr), 4)
+        
+    def test_precision_statistics(self):
+        avg, std = self.results.precision_statistics('e1')
+        self.assertEqual(avg, 0.2)
+        self.assertEqual(std, 0.)
+        
+    def test_recall_statistics(self):
+        avg, std = self.results.recall_statistics('e1')
+        self.assertEqual(avg, 0.2)
+        self.assertEqual(std, 0.)
+        
+    def test_f1score_statistics(self):
+        avg, std = self.results.f1score_statistics('e1')
+        self.assertEqual(avg, 0.2)
+        self.assertEqual(std, 0.)
+        
+    def test_add_bad_result(self):
+        r = TextBasedResults('e2')
+        with self.assertRaises(AssertionError):
+            r.add_result(Result(2,1,1,None))
+        with self.assertRaises(AssertionError):
+            r.add_result(Result(float('inf'),float('inf'),1,None))
+        with self.assertRaises(AssertionError):
+            r.add_result(Result(float('inf'),0,1,None))
+        with self.assertRaises(AssertionError):
+            r.add_result(Result(0,0,1,None))
+            
+    def test_add_good_result(self):
+        r = TextBasedResults('e3')
+        try:
+            r.add_result(Result(0.2,0.2,0.2,None))
+        except AssertionError:
+            self.fail()
+
 def main():
     unittest2.main(exit = False, verbosity = 2)
     

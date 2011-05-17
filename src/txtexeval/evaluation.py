@@ -4,7 +4,6 @@ import pickle
 import string
 import difflib
 import math
-from collections import namedtuple
 
 from BeautifulSoup import BeautifulSoup
 
@@ -42,13 +41,66 @@ def _bow(word_tokens):
     
 # results
 
-Result = namedtuple('Result', 'precision recall f1_score')# result instance
-
-class BaseEvalResults(object):
-    '''Base results container'''
+class Result(object):
     
+    def __init__(self, precision, recall, f1_score, id = None):
+        # validate result 
+        if math.isinf(precision) and not math.isinf(recall):
+            assert recall == 0
+            assert math.isnan(f1_score)
+        elif not math.isinf(precision) and math.isinf(recall):
+            assert precision == 0
+            assert math.isnan(f1_score)
+        elif math.isinf(precision) and math.isinf(recall):
+            assert math.isnan(f1_score)
+        elif precision == recall == 0:
+            assert math.isinf(f1_score)
+        elif not math.isinf(precision) and not math.isinf(recall):
+            assert 0 < precision <= 1
+            assert 0 < recall <= 1
+            assert 0 < f1_score <= 1
+        
+        self.precision = precision
+        self.recall = recall
+        self.f1_score = f1_score
+        self.id = id
+    
+    @property
+    def retrieved_empty(self):
+        return math.isinf(self.precision) and self.recall == 0
+    
+    @property
+    def relevant_empty(self):
+        return math.isinf(self.recall) and self.precision == 0
+    
+    @property
+    def relevant_retrieved_empty(self):
+        return math.isinf(self.precision) and math.isinf(self.recall)
+    
+    @property
+    def missmatch(self):
+        return self.precision == self.recall == 0
+    
+    @property
+    def succ(self):
+        return 0 < self.f1_score <= 1
+        
+class ResultsContents(object):
+    
+    def __init__(self,succ,rel_empty,rel_ret_empty,ret_empty,missmatch,dataset_len):
+        assert dataset_len >= succ+rel_empty+rel_ret_empty+ret_empty+missmatch
+        
+        self.succ = succ
+        self.rel_empty = rel_empty
+        self.rel_ret_empty = rel_ret_empty
+        self.ret_empty = ret_empty
+        self.missmatch = missmatch
+         
+        self.fail =  dataset_len-(succ+rel_empty+rel_ret_empty+ret_empty+missmatch)
+        
+class TextBasedResults(object):
+            
     __pickle_path = os.path.join(settings.PATH_LOCAL_DATA,'results-cache')
-    
     __internal_state = {} # Borg design pattern
     
     def __init__(self, extractor = None):
@@ -57,6 +109,8 @@ class BaseEvalResults(object):
         # ensure the presence of attributes
         if not 'text_eval_results' in self.__dict__: 
             self.text_eval_results = {}
+        if not 'dataset_len' in self.__dict__:
+            self.dataset_len = 0
         
         # optional
         if extractor and (not (extractor in self.text_eval_results)):
@@ -73,78 +127,77 @@ class BaseEvalResults(object):
         with open(os.path.join(self.__pickle_path,'%s.pickle' % dataset_name),'rb') as f:
             self.__internal_state = pickle.load(f)
             self.__dict__ = self.__internal_state
-            
-    def append_result(self, result):
-        '''Append the result instance to the given extractor'''
-        pass
     
-    def print_results(self):
-        '''Print results to stdout'''
-        pass
-            
-class TextBasedResults(BaseEvalResults):
-            
-    def get_results(self):
-        '''Getter'''
-        return self.text_eval_results
-    
-    def append_result(self, result):
+    def add_result(self, result):        
         self.text_eval_results[self._extractor].append(result)
         
-    def filtered_results(self, extractor_name):
-        result_filter = lambda r: \
-           (not math.isinf(r.precision)) and \
-           (not math.isinf(r.recall)) and \
-           (not math.isinf(r.f1_score))
-        return filter(result_filter, self.text_eval_results[extractor_name])
+    def filtered_results(self, extractor):
+        result_filter = lambda r: r.succ
+        return filter(result_filter, self.text_eval_results[extractor])
     
-    def _statistics(self, extractor_name, stat_typ): # DRY helper
-        if stat_typ == 'precision':  selector = 0
-        elif stat_typ == 'recall':   selector = 1
-        elif stat_typ == 'f1_score': selector = 2
-        results_list = [r[selector] for r in  self.filtered_results(extractor_name)]
+    def results_contents(self, extractor):
+        results = self.text_eval_results[extractor]
         
+        succ = len(self.filtered_results(extractor))
+        rel_empty     = len(filter(lambda r: r.relevant_empty, results))
+        ret_empty     = len(filter(lambda r: r.retrieved_empty, results))
+        rel_ret_empty = len(filter(lambda r: r.relevant_retrieved_empty, results))
+        missmatch     = len(filter(lambda r: r.missmatch, results))
+    
+        return ResultsContents(succ, rel_empty, rel_ret_empty, ret_empty,
+                                missmatch, self.dataset_len)
+    
+    def _statistics(self, extractor, stat_typ): # DRY helper
+        results_list = [getattr(r, stat_typ) for r in  self.filtered_results(extractor)]
         # average
         avg = sum(results_list) / float(len(results_list))
-        
         # std deviation
         stddev =  sum([(r - avg)**2. for r in results_list]) / float(len(results_list))
         stddev = math.sqrt(stddev)
-        
-        return avg, stddev, len(results_list)
+        return avg, stddev
       
-    def precision_statistics(self, extractor_name):
+    def precision_statistics(self, extractor):
         '''Return a tuple containing (avg, stddev)'''
-        return self._statistics(extractor_name, 'precision')
+        return self._statistics(extractor, 'precision')
     
-    def recall_statistics(self, extractor_name):
+    def recall_statistics(self, extractor):
         '''Return a tuple containing (avg, stddev)'''
-        return self._statistics(extractor_name, 'recall')
+        return self._statistics(extractor, 'recall')
     
-    def f1score_statistics(self, extractor_name):
+    def f1score_statistics(self, extractor):
         '''Return a tuple containing (avg, stddev)'''
-        return self._statistics(extractor_name, 'f1_score')
+        return self._statistics(extractor, 'f1_score')
         
     def print_results(self):
         print 'results based on text based evaluation'
-        for extractor_name in self.text_eval_results.iterkeys():
+        for extractor in self.text_eval_results.iterkeys():
             print '----------------'
-            print 'Ex. name: %s' % extractor_name
-            print 'avg. precision: %f   stddev: %f [on %d instances]' \
-             % self.precision_statistics(extractor_name) 
-            print 'avg. recall: %f   stddev: %f [on %d instances]' \
-             % self.recall_statistics(extractor_name) 
-            print 'avg. F1 score: %f   stddev: %f [on %d instances]' \
-             % self.f1score_statistics(extractor_name) 
-    
+            print 'Ex. name:       %s' % extractor
+            print 'avg. precision: %f   stddev: %f' \
+             % self.precision_statistics(extractor) 
+            print 'avg. recall:    %f   stddev: %f' \
+             % self.recall_statistics(extractor) 
+            print 'avg. F1 score:  %f   stddev: %f' \
+             % self.f1score_statistics(extractor) 
+             
+            rcontents = self.results_contents(extractor) 
+            print 'relevant  empty:   %d' % rcontents.rel_empty
+            print 'retrieved empty:   %d' % rcontents.ret_empty
+            print 'rel intersect ret: %d' % rcontents.rel_ret_empty
+            print 'success:           %d' % rcontents.succ
+            print 'missmatch:         %d' % rcontents.missmatch
+            print 'fail:              %d' % rcontents.fail
+            print 'dataset_len=%d sum=%d' % self.dataset_len
+                                             
 # evaluators    
 
 class BaseEvaluator():
     '''Outline for evaluators'''
     
-    def __init__(self, retrieved, relevant):
+    def __init__(self, retrieved, relevant, id = None):
         self.retrieved = retrieved
         self.relevant = relevant
+        self.id = id
     
     def get_eval_results(self):
         # return instance of Result
@@ -168,23 +221,23 @@ class TextOnlyEvaluator(BaseEvaluator):
         recall = float(rel_union_ret) / float(len(rel)) \
                     if len(rel) > 0 else float('inf')
                     
-        # nan when prec or recall are inf or 0.0
+        # nan when prec or recall are inf 
         f1_score = (2. * precision * recall)/(precision + recall) \
                     if precision + recall > 0 else float('inf')
         
-        return Result(precision, recall, f1_score)
+        return Result(precision, recall, f1_score, self.id)
         
 #formats
     
-class ResultFormat(object):
-    
-    def get_bow(self):# bag of words
-        pass
+class BaseResultFormat(object):
     
     def get_word_seq(self):# sequence of words
         pass
     
-class TextResultFormat(ResultFormat):
+    def get_bow(self):# bag of words
+        pass
+    
+class TextResultFormat(BaseResultFormat):
     '''Basic format for dirty text'''
     
     def __init__(self, dirty_text):
@@ -196,11 +249,11 @@ class TextResultFormat(ResultFormat):
     def get_bow(self):
         return _bow(_tokenize_text(self._text))
     
-class CleanEvalFormat(ResultFormat):
+class CleanEvalFormat(BaseResultFormat):
     '''Format specific for cleaneval dataset'''
     
-    re_URL = re.compile(r'^(\s+)URL:(.*)\n')
-    re_TAG = re.compile(r'^(\s+)<(p|h|l)>', re.IGNORECASE | re.MULTILINE)
+    re_URL = re.compile(r'^(\s*)URL:(.*)$', re.IGNORECASE | re.MULTILINE)
+    re_TAG = re.compile(r'^(\s*)<(p|h|l)>', re.IGNORECASE | re.MULTILINE)
     
     @staticmethod
     def from_document(document):
@@ -208,7 +261,7 @@ class CleanEvalFormat(ResultFormat):
     
     def __init__(self, cleaneval_string):
         # remove URL meta data
-        self._text = self.re_URL.sub( '', cleaneval_string)
+        self._text = self.re_URL.sub('', cleaneval_string)
         # remove tag guidelines
         self._text = self.re_TAG.sub('', self._text)
         
@@ -218,7 +271,7 @@ class CleanEvalFormat(ResultFormat):
     def get_bow(self):
         return _bow(_tokenize_text(self._text))
         
-class GoogleNewsFormat(ResultFormat):
+class GoogleNewsFormat(BaseResultFormat):
     '''
     Format specific for google news dataset
     

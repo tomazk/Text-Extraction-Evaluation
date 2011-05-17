@@ -18,28 +18,31 @@ logger = logging.getLogger()
 def local_evaluate(dataset_type, dataset_name):    
     for extractor_cls in extractor_list:
         logger.info('started evaluating extractor %s', extractor_cls.NAME)
-        results = TextBasedResults(extractor_cls.NAME)
+        results = TextBasedResults(extractor_cls.SLUG)
         storage = LocalResultStorage(dataset_name, extractor_cls)
         
         loader = LocalDatasetLoader(dataset_name)
         for doc in loader:
-            logger.debug('doc: %s', doc.raw_filename)
+            logger.debug('doc: %s', doc.id)
             format_clean = from_document_factory(doc, slug = dataset_type)
-            
             try:
                 result_string = storage.fetch_result(doc)
             except DataError:
-                logger.info('skipped %s no result for %s extractor',
-                             doc.raw_filename, extractor_cls.NAME)
+                logger.info('no stored result for %s at %s extractor',
+                            doc.id, extractor_cls.NAME)
                 continue
             else:
                 format_result = extractor_cls.formatted_result(result_string)
-                evaluator = TextOnlyEvaluator(retrieved = format_result, relevant = format_clean)
-                results.append_result(evaluator.get_eval_results())
-            
+                evaluator = TextOnlyEvaluator(
+                            retrieved = format_result,
+                            relevant = format_clean,
+                            id = doc.id)
+                results.add_result(evaluator.get_eval_results())
+#            
     results = TextBasedResults()
-    results.print_results()
+    results.dataset_len = len(LocalDatasetLoader(dataset_name))
     results.save(dataset_name)     
+    results.print_results()
     
 def parse_args():
     '''Sys argument parsing trough argparse'''

@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import settings
 from txtexeval.evaluation import TextBasedResults
-from txtexeval.extractor import extractor_list
+from txtexeval.extractor import extractor_list, get_extractor_cls
 
 def precision_recall_plot(dataset_name, img_name):
 
@@ -18,11 +18,11 @@ def precision_recall_plot(dataset_name, img_name):
     txt_results.print_results()
     
     #package results
-    extractor_names = tuple( [e.NAME for e in extractor_list] )
+    extractor_slugs = tuple( [e.SLUG for e in extractor_list] )
     packaged_data = (
-        ('Precision', [ txt_results.precision_statistics(en) for en in extractor_names ]),
-        ('Recall', [ txt_results.recall_statistics(en) for en in extractor_names ]),
-        ('F1 score', [ txt_results.f1score_statistics(en) for en in extractor_names ]),             
+        ('Precision', [ txt_results.precision_statistics(e) for e in extractor_slugs ]),
+        ('Recall', [ txt_results.recall_statistics(e) for e in extractor_slugs ]),
+        ('F1 score', [ txt_results.f1score_statistics(e) for e in extractor_slugs ]),             
     )
     
     bar_color = ('b','c','m')
@@ -30,7 +30,7 @@ def precision_recall_plot(dataset_name, img_name):
     for i,pdata in enumerate(packaged_data):
     
         # package plotting values 
-        num_of_extractors = len(extractor_names)
+        num_of_extractors = len(extractor_slugs)
         ind = np.arange(num_of_extractors)  # the x locations for the groups
         width = 0.6      # the width of the bars
         
@@ -45,6 +45,7 @@ def precision_recall_plot(dataset_name, img_name):
             yerr = stddev, linewidth = 0.5, alpha = 0.8)
         
         # lables and titles
+        extractor_names = [ get_extractor_cls(e).NAME for e in extractor_slugs]
         plt.title(pdata[0])
         plt.xticks(ind+width/2., extractor_names, size = 'xx-small', rotation = 'vertical')
         plt.legend( (rects_avg[0],),
@@ -94,7 +95,7 @@ def extractor_stat_plot(dataset_name, output_img_name):
     for ex_index,extractor_cls in enumerate(extractor_list):
     
         # repackage results
-        extractor_results = txt_results.filtered_results(extractor_cls.NAME)
+        extractor_results = txt_results.filtered_results(extractor_cls.SLUG)
         results_list_prec = [r.precision for r in extractor_results] 
         results_list_rec = [r.recall for r in extractor_results]
         results_list_f1 = [r.f1_score for r in extractor_results ]
