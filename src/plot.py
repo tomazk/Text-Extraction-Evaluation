@@ -225,7 +225,8 @@ def parse_args():
 def main():
     args = parse_args()
     
-    output_img_name = args.output_img_name or '%s.png' % args.dataset_name
+    output_img_name = args.output_img_name or \
+                      '%s-%s.png' % (args.dataset_name, args.action)
     if args.action == 'dataset_stat':
         precision_recall_plot(args.dataset_name, output_img_name)
     elif args.action == 'extr_stat':
