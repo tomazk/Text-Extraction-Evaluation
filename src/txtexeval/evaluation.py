@@ -327,6 +327,6 @@ def from_document_factory(document, slug):
     Factory function that returns an instance of a format class listed in the
     dataset format map.
     '''
-    map = dict(dataset_format_map)
-    cls = map[slug]
+    map_ = dict(dataset_format_map)
+    cls = map_[slug]
     return cls.from_document(document)
