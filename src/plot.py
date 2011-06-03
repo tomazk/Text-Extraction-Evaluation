@@ -121,7 +121,7 @@ def extractor_stat_plot(dataset_name, img_name):
     
         
         ax.set_title(extractor_cls.NAME, size = 'small')
-        ax.set_xlabel('\nlimits',size = 'x-small', linespacing=2)
+        #ax.set_xlabel('\nlimits',size = 'x-small', linespacing=2)
         ax.set_zlabel('\nno. of instances',size = 'x-small', linespacing=2)
         ax.yaxis.set_ticks([])
         resize_axis_tick_labels(ax.xaxis)
