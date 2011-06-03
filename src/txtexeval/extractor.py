@@ -282,9 +282,17 @@ class ExtractivExtractor(BaseExtractor):
     @classmethod
     def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
+        
+        text = js['Document']['text']
+        content_sentences = []
+        for se in js['sentences']:
+            zone = se.get('zone','regular')
+            if zone == 'regular':
+                content_sentences.append(text[se['offset']:se['offset']+se['len']] ) 
+        
         return TextResultFormat(
             js['Document'].get('title','').encode('utf8','ignore') + ' ' +\
-            js['Document']['text'].encode('utf8','ignore')
+            (' '.join(content_sentences)).encode('utf8','ignore')
         )
         
 class RepustateExtractor(BaseExtractor):
