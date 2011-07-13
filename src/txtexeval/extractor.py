@@ -90,7 +90,7 @@ class BoilerpipeDefaultExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtrac
     SLUG = 'boilerpipe_def'
     FORMAT = 'json'
     
-    __extractor_type = 'default'
+    _extractor_type = 'default'
     
     @return_content
     def extract(self):
@@ -98,7 +98,7 @@ class BoilerpipeDefaultExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtrac
         req = Request(
             settings.BOILERPIPE_API_ENDPOINT,
             data = {
-                "extractorType":self.__extractor_type,
+                "extractorType":self._extractor_type,
                 "rawHtml": html.encode(self.data_instance.raw_encoding,'ignore') 
             },
             headers = {'Content-Type':'application/x-www-form-urlencoded'}
@@ -113,7 +113,7 @@ class BoilerpipeArticleExtractor(BoilerpipeDefaultExtractor):
     SLUG = 'boilerpipe_art'
     FORMAT = 'json'
     
-    __extractor_type = 'article'
+    _extractor_type = 'article'
     
     
 class GooseExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtractor):
