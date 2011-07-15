@@ -333,34 +333,34 @@ class CleanevalProcessor(BaseProcessor):
             with open(os.path.join(self._dataset_dir, 'raw', output_filename) ,'w') as output:
                 output.write(html_string)
 
-def parse_args():               
+def parse_args(args):               
     # sys argument parsing using argparse
     parser = argparse.ArgumentParser(description = 'Tool for generating meta data files and cleanup preprocessing regarding datasets')
     parser.add_argument('dataset_type', choices = ('cleaneval','gnews'), help = 'dataset type e.g. cleaneval' )
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-p','--path', help = 'path to the meta data output file and .log file (uses the default path if not provided)')
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
-    return parser.parse_args()
+    return parser.parse_args(args)
                 
-def main():
-    args = parse_args()
+def main(args):
+    pargs = parse_args(args)
     # get the ouput direcotry - this is where the .yaml and .log file will reside
-    output_dir = _verify_args(args)
+    output_dir = _verify_args(pargs)
     
     # now we can initialize logging
     print 'log: %s' % os.path.join(output_dir, 'preproc.log')
     logging.basicConfig(filename= os.path.join(output_dir, 'preproc.log'), level=logging.DEBUG)
     
     # add a console handler to root logger if user provides a --verbose flag
-    if args.verbose:
+    if pargs.verbose:
         console = logging.StreamHandler()
         formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
         console.setFormatter(formatter)
         console.setLevel(logging.DEBUG)
         logging.getLogger().addHandler(console)
     
-    if args.dataset_type == 'cleaneval':
-        processor = CleanevalProcessor(output_dir, args.dataset_name)
+    if pargs.dataset_type == 'cleaneval':
+        processor = CleanevalProcessor(output_dir, pargs.dataset_name)
         try:
             print '[CREATE BACKUPS]'
             processor.create_backups()
@@ -377,8 +377,8 @@ def main():
             print e
             sys.exit(-1)
             
-    elif args.dataset_type == 'gnews':
-        processor = GooglenewsProcessor(output_dir, args.dataset_name)
+    elif pargs.dataset_type == 'gnews':
+        processor = GooglenewsProcessor(output_dir, pargs.dataset_name)
         try:
             print '[GENERATING META DATA]'
             processor.generate_meta_data()
@@ -396,4 +396,5 @@ def main():
     
     
 if __name__ == '__main__':
-    main()
+    import sys
+    main(sys.argv[1:])

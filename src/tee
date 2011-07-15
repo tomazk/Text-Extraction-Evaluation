@@ -1,0 +1,48 @@
+#!/usr/bin/python
+'''
+Common command line tool
+'''
+
+import sys
+
+def print_help_exit(msg = ''):
+    if msg:
+        print msg    
+    print '''
+    usage: tee {plot|data|eval|ext|help} [-h] [<arg1>,<arg2>,...]
+      plot     Plotting script
+      data     Dataset management script
+      eval     Evaluation script
+      ext      Extraction management script
+      help     Print out help text for the tee command
+     
+    flags:
+      -h       Print out help text for the selected script
+    '''
+    sys.exit(-1)
+
+def main():
+    args = sys.argv[1:]
+    if len(args) == 0:
+        print_help_exit('Not enough arguments')
+    if args[0] not in ('plot','data','eval','ext','help'):
+        print_help_exit('Unknown command')      
+          
+    if args[0] == 'help':
+        print_help_exit()
+    elif args[0] == 'plot':
+        import plot_manage
+        plot_manage.main(args[1:])
+    elif args[0] == 'data':
+        import dataset_manage
+        dataset_manage.main(args[1:])
+    elif args[0] == 'eval':
+        import evaluate_manage
+        evaluate_manage.main(args[1:])
+    elif args[0] == 'ext':
+        import extract_manage
+        extract_manage.main(args[1:])
+
+if __name__  == '__main__':
+    main()
+

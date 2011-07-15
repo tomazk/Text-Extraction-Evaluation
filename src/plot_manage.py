@@ -215,26 +215,26 @@ def dataset_contents_plot(dataset_name, img_name):
     out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', img_name)
     fig.savefig(out_path)
     
-def parse_args():
+def parse_args(args):
     parser = argparse.ArgumentParser(description = 'Plotting tool')
     parser.add_argument('action', choices = ('dataset_stat', 'extr_stat','contents'))
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-o','--output_img_name', type=str, help = 'name of the output image')
-    return parser.parse_args()
+    return parser.parse_args(args)
     
-def main():
-    args = parse_args()
-    
-    output_img_name = args.output_img_name or \
-                      '%s-%s.png' % (args.dataset_name, args.action)
-    if args.action == 'dataset_stat':
-        precision_recall_plot(args.dataset_name, output_img_name)
-    elif args.action == 'extr_stat':
-        extractor_stat_plot(args.dataset_name, output_img_name)
-    elif args.action == 'contents':
-        dataset_contents_plot(args.dataset_name, output_img_name)
+def main(args):
+    pargs = parse_args(args)
+    output_img_name = pargs.output_img_name or \
+                      '%s-%s.png' % (pargs.dataset_name, pargs.action)
+    if pargs.action == 'dataset_stat':
+        precision_recall_plot(pargs.dataset_name, output_img_name)
+    elif pargs.action == 'extr_stat':
+        extractor_stat_plot(pargs.dataset_name, output_img_name)
+    elif pargs.action == 'contents':
+        dataset_contents_plot(pargs.dataset_name, output_img_name)
     
     print '[DONE]'
 
 if __name__ == '__main__':
-    main()
+    import sys
+    main(sys.argv[1:])

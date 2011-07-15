@@ -31,7 +31,7 @@ def local_extract(dataset_name, extractor_slug, timeout, retry_failed):
     storage.dump_summary()
     logger.info('finished with %s dataset', dataset_name)
     
-def parse_args():
+def parse_args(args):
     '''Sys argument parsing trough argparse'''
     ex_list = [e.SLUG for e in extractor_list]
     ex_list.append('all')
@@ -42,13 +42,7 @@ def parse_args():
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
     parser.add_argument('-t','--timeout', type=int, default=0, help='wait x seconds between extraction operations')
     parser.add_argument('-rf','--retry_failed', action = 'store_true', help = 'retry to extract text from instances that failed')
-    args = parser.parse_args()
-    
-    # printing arguments
-    print 'extractor: %s' % args.extractor
-    print 'dataset name: %s' % args.dataset_name
-    
-    return args
+    return parser.parse_args(args)
     
 def logging_setup(verbose, output_path):
     '''Set verbose to True if you want the log to appear on stderr'''
@@ -65,19 +59,20 @@ def logging_setup(verbose, output_path):
         console.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
         logger.addHandler(console)
 
-def main():
-    args = parse_args()
+def main(args):
+    pargs = parse_args(args)
     
     # setup logging
-    logging_setup(args.verbose, get_local_path(args.dataset_name,'result','result.log'))
+    logging_setup(pargs.verbose, get_local_path(pargs.dataset_name,'result','result.log'))
     
     print '[STARTED]'
-    if args.extractor == 'all': # special case
+    if pargs.extractor == 'all': # special case
         for ex in extractor_list:
-            local_extract(args.dataset_name, ex.SLUG, args.timeout, args.retry_failed)
+            local_extract(pargs.dataset_name, ex.SLUG, pargs.timeout, pargs.retry_failed)
     else:
-        local_extract(args.dataset_name, args.extractor, args.timeout, args.retry_failed)
+        local_extract(pargs.dataset_name, pargs.extractor, pargs.timeout, pargs.retry_failed)
     print '[DONE]'
     
 if __name__ == '__main__':
-    main()
+    import sys
+    main(sys.argv[1:])

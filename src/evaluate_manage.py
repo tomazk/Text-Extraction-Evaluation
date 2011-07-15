@@ -38,23 +38,19 @@ def local_evaluate(dataset_type, dataset_name):
                             relevant = format_clean,
                             id = doc.id)
                 results.add_result(evaluator.get_eval_results())
-#            
+                          
     results = TextBasedResults()
     results.dataset_len = len(LocalDatasetLoader(dataset_name))
     results.save(dataset_name)     
     results.print_results()
     
-def parse_args():
+def parse_args(args):
     '''Sys argument parsing trough argparse'''
     parser = argparse.ArgumentParser(description = 'Tool for for generating evaluation results')
     parser.add_argument('dataset_type', choices = [i[0] for i in dataset_format_map], help = 'dataset type e.g. cleaneval' )
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
-    args = parser.parse_args()
-    # printing arguments
-    print 'dataset type: %s' % args.dataset_type
-    print 'dataset name: %s' % args.dataset_name
-    return args
+    return parser.parse_args(args)
     
 def logging_setup(verbose):
     '''Set verbose to True if you want the log to appear on stderr'''
@@ -72,12 +68,13 @@ def logging_setup(verbose):
         logger.addHandler(console)
     print 'log: %s' % logd
 
-def main():
-    args = parse_args()
-    logging_setup(args.verbose)
+def main(args):
+    pargs = parse_args(args)
+    logging_setup(pargs.verbose)
     print '[STARTED]'
-    local_evaluate(args.dataset_type,args.dataset_name)
+    local_evaluate(pargs.dataset_type,pargs.dataset_name)
     print '[DONE]'
     
 if __name__ == '__main__':
-    main()
+    import sys
+    main(sys.argv[1:])
