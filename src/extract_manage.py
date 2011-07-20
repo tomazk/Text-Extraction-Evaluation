@@ -33,9 +33,7 @@ def local_extract(dataset_name, extractor_slug, timeout, retry_failed):
     
 def parse_args(args):
     '''Sys argument parsing trough argparse'''
-    ex_list = [e.SLUG for e in extractor_list]
-    ex_list.append('all')
-    
+    ex_list = [e.SLUG for e in extractor_list]    
     parser = argparse.ArgumentParser(description = 'Tool for extracting article text from dataset instances')
     parser.add_argument('extractor', choices = ex_list, help = 'extractor slug or [all] for iterating over all extractors')
     parser.add_argument('dataset_name', help = 'name of the dataset')
@@ -61,16 +59,10 @@ def logging_setup(verbose, output_path):
 
 def main(args):
     pargs = parse_args(args)
-    
-    # setup logging
     logging_setup(pargs.verbose, get_local_path(pargs.dataset_name,'result','result.log'))
     
     print '[STARTED]'
-    if pargs.extractor == 'all': # special case
-        for ex in extractor_list:
-            local_extract(pargs.dataset_name, ex.SLUG, pargs.timeout, pargs.retry_failed)
-    else:
-        local_extract(pargs.dataset_name, pargs.extractor, pargs.timeout, pargs.retry_failed)
+    local_extract(pargs.dataset_name, pargs.extractor, pargs.timeout, pargs.retry_failed)
     print '[DONE]'
     
 if __name__ == '__main__':
