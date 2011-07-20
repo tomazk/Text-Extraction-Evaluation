@@ -374,7 +374,7 @@ class TrendictionExtractor(BaseExtractor):
     '''Trendiction API'''
     
     NAME = 'Trendiction'
-    SLUG = 'trediction'
+    SLUG = 'trendiction'
     FORMAT = 'json'
     
     @check_content_status
