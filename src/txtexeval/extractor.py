@@ -370,6 +370,42 @@ class NCleanerNonLexExtractor(NCleanerStdEnExtractor):
     SLUG = 'ncleaner_nonlex'
     FORMAT = 'txt'
     
+class TrendictionExtractor(BaseExtractor):
+    '''Trendiction API'''
+    
+    NAME = 'Trendiction'
+    SLUG = 'trediction'
+    FORMAT = 'json'
+    
+    @check_content_status
+    @return_content
+    def extract(self):
+        req  = Request(
+            settings.TRENDICTION_ENDPOINT,
+            data = {
+                'ckey':'',
+                'url':self.data_instance.get_url(),
+                'onlycontent':'false',
+                'outf':'json',
+            }
+        )
+        return req.get()
+    
+    def _content_status(self):
+        js = json.loads(self._content, encoding = 'utf8')
+        try:
+            js['result_content']['data'][0]['content']['content_text']
+            js['result_content']['data'][0]['content']['title_text']
+        except (IndexError, KeyError) as e:
+            raise ContentExtractorError('content not present in the response' + repr(e))
+        
+    @classmethod
+    def formatted_result(cls, result_string):
+        js = json.loads(result_string, encoding = 'utf8')
+        content = js['result_content']['data'][0]['content']['content_text']
+        title = js['result_content']['data'][0]['content']['title_text']
+        return TextResultFormat((title +' '+ content).encode('utf8','ignore'))
+        
     
 # list of all extractor classes         
 extractor_list = (
@@ -386,6 +422,7 @@ extractor_list = (
     ZemantaExtractor,
     NCleanerStdEnExtractor,
     NCleanerNonLexExtractor,
+    TrendictionExtractor,
 )
 
 def get_extractor_cls(extractor_slug):
