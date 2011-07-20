@@ -35,7 +35,7 @@ def parse_args(args):
     '''Sys argument parsing trough argparse'''
     ex_list = [e.SLUG for e in extractor_list]    
     parser = argparse.ArgumentParser(description = 'Tool for extracting article text from dataset instances')
-    parser.add_argument('extractor', choices = ex_list, help = 'extractor slug or [all] for iterating over all extractors')
+    parser.add_argument('extractor', choices = ex_list, help = 'extractor slug')
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
     parser.add_argument('-t','--timeout', type=int, default=0, help='wait x seconds between extraction operations')
