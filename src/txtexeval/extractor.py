@@ -2,6 +2,7 @@ import urllib
 import json
 
 import readability
+import justext
 
 import settings
 from .util import Request, html_to_text
@@ -405,7 +406,24 @@ class TrendictionExtractor(BaseExtractor):
         content = js['result_content']['data'][0]['content']['content_text']
         title = js['result_content']['data'][0]['content']['title_text']
         return TextResultFormat((title +' '+ content).encode('utf8','ignore'))
+    
+class JustextExtractor(BaseExtractor):
+    '''Justext extractor'''
+    
+    NAME = 'JusText'
+    SLUG = 'justext'
+    FORMAT = 'txt'
+    
+    def extract(self):
+        html = self.data_instance.get_raw_html()
+        html = html.encode(self.data_instance.raw_encoding,'ignore')
+        paragraphs = justext.justext(html, justext.get_stoplist('English'),
+                             encoding = self.data_instance.raw_encoding)        
+        return ' '.join([para['text'] for para in paragraphs if para['class'] == 'good'])
         
+    @classmethod
+    def formatted_result(cls, result_string):
+        return TextResultFormat(result_string)
     
 # list of all extractor classes         
 extractor_list = (
@@ -423,6 +441,7 @@ extractor_list = (
     NCleanerStdEnExtractor,
     NCleanerNonLexExtractor,
     TrendictionExtractor,
+    JustextExtractor,
 )
 
 def get_extractor_cls(extractor_slug):
