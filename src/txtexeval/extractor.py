@@ -418,8 +418,19 @@ class JustextExtractor(BaseExtractor):
         html = self.data_instance.get_raw_html()
         html = html.encode(self.data_instance.raw_encoding,'ignore')
         paragraphs = justext.justext(html, justext.get_stoplist('English'),
-                             encoding = self.data_instance.raw_encoding)        
-        return ' '.join([para['text'] for para in paragraphs if para['class'] == 'good'])
+                             encoding = self.data_instance.raw_encoding)    
+        good_paragraphs = []
+        for para in paragraphs:
+            if para['class'] == 'good':
+                paragraph_text = para['text']
+                # this asseration makes sure we catch string and unicode only
+                assert isinstance(paragraph_text, basestring)
+                if type(paragraph_text) == unicode:
+                    good_paragraphs.append(paragraph_text.encode('utf8', 'ignore'))
+                else:
+                    good_paragraphs.append(paragraph_text)
+            
+        return '\n\n'.join(good_paragraphs)
         
     @classmethod
     def formatted_result(cls, result_string):
