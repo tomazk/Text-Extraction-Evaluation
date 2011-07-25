@@ -116,6 +116,14 @@ class BoilerpipeArticleExtractor(BoilerpipeDefaultExtractor):
     
     _extractor_type = 'article'
     
+class BoilerpipeArticleSentencesExtractor(BoilerpipeDefaultExtractor):
+    '''Boilerpipe extractor tuned for extracting article sentences'''
+    
+    NAME = 'Boilerpipe SENT'
+    SLUG = 'boilerpipe_sent'
+    FORMAT = 'json'
+    
+    _extractor_type = 'sentence'
     
 class GooseExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtractor):
     '''Goose project extractor'''
@@ -440,6 +448,7 @@ class JustextExtractor(BaseExtractor):
 extractor_list = (
     BoilerpipeDefaultExtractor,
     BoilerpipeArticleExtractor,
+    BoilerpipeArticleSentencesExtractor,
     GooseExtractor,
     MSSExtractor,
     PythonReadabilityExtractor,
