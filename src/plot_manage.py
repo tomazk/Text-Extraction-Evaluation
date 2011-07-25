@@ -65,7 +65,8 @@ def dataset_stat_plot(dataset_name, img_name):
         plt.legend(  (rects_avg[0],),
                      ('avg',),
                      fancybox = True,
-                     prop = dict(size='x-small')
+                     prop = dict(size='x-small'),
+                     loc = 4 # lower right 
         )
         for rect in rects_avg:
             height = rect.get_height()
