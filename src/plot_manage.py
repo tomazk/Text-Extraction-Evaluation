@@ -21,8 +21,11 @@ def extractor_list_filter(extractor_slugs):
     '''
     return [e for e in extractor_list if e.SLUG in extractor_slugs]
 
-def precision_recall_plot(dataset_name, img_name):
-    '''Plot the avg precision, recall and F1 score bar chart.'''
+def dataset_stat_plot(dataset_name, img_name):
+    '''
+    Plot the avg precision, recall and F1 score bar chart for the given dataset
+    name.
+    '''
     # get results
     txt_results = TextBasedResults()
     txt_results.load(dataset_name)
@@ -239,7 +242,7 @@ def main(args):
     output_img_name = pargs.output_img_name or \
                       '%s-%s.png' % (pargs.dataset_name, pargs.action)
     if pargs.action == 'dataset_stat':
-        precision_recall_plot(pargs.dataset_name, output_img_name)
+        dataset_stat_plot(pargs.dataset_name, output_img_name)
     elif pargs.action == 'extr_stat':
         extractor_stat_plot(pargs.dataset_name, output_img_name)
     elif pargs.action == 'contents':
