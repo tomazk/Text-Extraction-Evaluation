@@ -1,3 +1,6 @@
+'''
+Script for plotting evaluation results.
+'''
 import os
 import math
 
@@ -10,14 +13,24 @@ import settings
 from txtexeval.evaluation import TextBasedResults
 from txtexeval.extractor import extractor_list, get_extractor_cls
 
+def extractor_list_filter(extractor_slugs):
+    '''
+    Produce a filtered extractor_list based on a list that contains slugs of
+    desired extractors. We need this because the global extractor_list 
+    dictates the correct order.
+    '''
+    return [e for e in extractor_list if e.SLUG in extractor_slugs]
+
 def precision_recall_plot(dataset_name, img_name):
+    '''Plot the avg precision, recall and F1 score bar chart.'''
     # get results
     txt_results = TextBasedResults()
     txt_results.load(dataset_name)
     txt_results.print_results()
     
     #package results
-    extractor_slugs = tuple( [e.SLUG for e in extractor_list] )
+    elist = extractor_list_filter(txt_results.text_eval_results.keys())
+    extractor_slugs = tuple([e.SLUG for e in elist])
     packaged_data = (
         ('Precision', [ txt_results.precision_statistics(e) for e in extractor_slugs ]),
         ('Recall', [ txt_results.recall_statistics(e) for e in extractor_slugs ]),
@@ -70,6 +83,7 @@ def precision_recall_plot(dataset_name, img_name):
     plt.savefig(out_path)
     
 def equidistant_count(start, stop, step , list):
+    '''Return a tuple containing equidistant distribution baskets.'''
     limit_list = np.arange(start,stop, step)
     count = []
     for low in limit_list:
@@ -83,6 +97,7 @@ def resize_axis_tick_labels(axis, size = 'xx-small'):
         label.set_size(size)
         
 def extractor_stat_plot(dataset_name, img_name):
+    '''Plot the distributions of per-document precision, recall & F1 score '''
     fig = plt.figure()
     
     # get results and repackage the data
@@ -90,7 +105,8 @@ def extractor_stat_plot(dataset_name, img_name):
     txt_results.load(dataset_name)
     txt_results.print_results()
     
-    for ex_index,extractor_cls in enumerate(extractor_list):
+    elist = extractor_list_filter(txt_results.text_eval_results.keys())
+    for ex_index,extractor_cls in enumerate(elist):
     
         # repackage results
         extractor_results = txt_results.filtered_results(extractor_cls.SLUG)
@@ -146,13 +162,15 @@ def extractor_stat_plot(dataset_name, img_name):
     fig.savefig(out_path)
     
 def dataset_contents_plot(dataset_name, img_name):
+    '''Plot the error case analysis.'''
     # get results
     txt_results = TextBasedResults()
     txt_results.load(dataset_name)
     txt_results.print_results()
     
     # package data
-    extractor_slugs = tuple( [e.SLUG for e in extractor_list] )
+    elist = extractor_list_filter(txt_results.text_eval_results.keys())
+    extractor_slugs = tuple( [e.SLUG for e in elist] )
     package = [
         ('|rel| = 0','#9DFADE', [ txt_results.result_contents(ex).rel_empty for ex in extractor_slugs] ),
         ('|rel intersect ret| = 0','#3C70A3', [ txt_results.result_contents(ex).rel_ret_empty for ex in extractor_slugs] ),
@@ -179,12 +197,7 @@ def dataset_contents_plot(dataset_name, img_name):
         ax1.bar(ind, pdata[2],width,bottom = bottom_y,color=pdata[1], 
                 ecolor ='g', linewidth = 0.2, alpha = 0.95)
         bottom_y += pdata[2]
-    # TODO:
-    #ax1.plot(np.arange(num_of_extractors+2), [txt_results.dataset_len] * (num_of_extractors+2), 
-    #         linestyle = ':', color = 'k', linewidth = 2,
-    #         label = '%d documents'% txt_results.dataset_len )
-        
-    # without successful instances
+
     ax2 = plt.subplot(122)
     bottom_y = np.zeros(num_of_extractors)
     del package[-1]
