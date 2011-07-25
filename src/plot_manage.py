@@ -11,7 +11,6 @@ from txtexeval.evaluation import TextBasedResults
 from txtexeval.extractor import extractor_list, get_extractor_cls
 
 def precision_recall_plot(dataset_name, img_name):
-
     # get results
     txt_results = TextBasedResults()
     txt_results.load(dataset_name)

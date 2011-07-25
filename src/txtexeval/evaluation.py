@@ -4,10 +4,13 @@ import pickle
 import string
 import difflib
 import math
+import logging
 
 from BeautifulSoup import BeautifulSoup
 
 import settings
+
+logger = logging.getLogger(__name__)
 
 # module utils
 
@@ -113,22 +116,40 @@ class TextBasedResults(object):
             self.dataset_len = 0
         
         # optional
-        if extractor and (not (extractor in self.text_eval_results)):
+        if extractor != None:
             self.text_eval_results[extractor] = []
         self._extractor = extractor
 
     def save(self, dataset_name):
         '''Pickle the internal state'''
-        with open(os.path.join(self.__pickle_path,'%s.pickle' % dataset_name),'wb') as f:
+        pickle_path = os.path.join(self.__pickle_path,'%s.pickle' % dataset_name)
+        logger.info('saving text based results to: %s', pickle_path)
+        
+        with open(pickle_path,'wb') as f:
             pickle.dump( self.__internal_state ,f)
     
     def load(self, dataset_name):
         '''Unpickle the internal state'''
-        with open(os.path.join(self.__pickle_path,'%s.pickle' % dataset_name),'rb') as f:
+        pickle_path = os.path.join(self.__pickle_path,'%s.pickle' % dataset_name)
+        logger.info('loading text based results from: %s', pickle_path)
+        
+        try:
+            f = open(pickle_path,'rb')
+        except IOError as e:
+            logger.warning('no pickle found: %s', repr(e))
+        else:
             self.__internal_state = pickle.load(f)
             self.__dict__ = self.__internal_state
+            f.close()
+            
+            
+    def set_extractor(self, extractor):
+        self._extractor = extractor
+        self.text_eval_results[extractor] = []
     
-    def add_result(self, result):        
+    def add_result(self, result):
+        if self._extractor == None:
+            raise TypeError('extractor not set')
         self.text_eval_results[self._extractor].append(result)
         
     def filtered_results(self, extractor):
