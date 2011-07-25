@@ -451,7 +451,7 @@ extractor_list = (
     ZemantaExtractor,
     NCleanerStdEnExtractor,
     NCleanerNonLexExtractor,
-    #TrendictionExtractor,
+    TrendictionExtractor,
     JustextExtractor,
 )
 

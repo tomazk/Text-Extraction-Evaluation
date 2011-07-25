@@ -104,16 +104,10 @@ class ResultContents(object):
 class TextBasedResults(object):
             
     __pickle_path = os.path.join(settings.PATH_LOCAL_DATA,'results-cache')
-    __internal_state = {} # Borg design pattern
     
     def __init__(self, extractor = None):
-        self.__dict__ = self.__internal_state
-        
-        # ensure the presence of attributes
-        if not 'text_eval_results' in self.__dict__: 
-            self.text_eval_results = {}
-        if not 'dataset_len' in self.__dict__:
-            self.dataset_len = 0
+        self.text_eval_results = {}
+        self.dataset_len = 0
         
         # optional
         if extractor != None:
@@ -126,7 +120,7 @@ class TextBasedResults(object):
         logger.info('saving text based results to: %s', pickle_path)
         
         with open(pickle_path,'wb') as f:
-            pickle.dump( self.__internal_state ,f)
+            pickle.dump( self.__dict__ ,f)
     
     def load(self, dataset_name):
         '''Unpickle the internal state'''
@@ -138,8 +132,7 @@ class TextBasedResults(object):
         except IOError as e:
             logger.warning('no pickle found: %s', repr(e))
         else:
-            self.__internal_state = pickle.load(f)
-            self.__dict__ = self.__internal_state
+            self.__dict__.update( pickle.load(f) )
             f.close()
             
             
