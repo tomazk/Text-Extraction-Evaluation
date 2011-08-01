@@ -3,6 +3,8 @@ import json
 
 import readability
 import justext
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 
 import settings
 from .util import Request, html_to_text
@@ -18,6 +20,7 @@ class ContentExtractorError(ExtractorError):
     Raised when the error is included in the content (e.g. json formatted 
     response has a status field) fetched by the extractor
     '''
+    pass
 
 def return_content(extract):
     '''
@@ -207,6 +210,50 @@ class NodeReadabilityExtractor(_FormattedResultMin,BaseExtractor):
         js = json.loads(self._content, encoding = 'utf8')
         if js['status'] == 'ERROR':
             raise ContentExtractorError('failed')
+        
+class SeleniumReadabilityExtractor(BaseExtractor):
+    '''
+    Using selenium webdriver API to harvest the results of the original
+    readability bookmarklet
+    '''
+    
+    NAME = 'Readability'
+    SLUG = 'orig_read'
+    FORMAT = 'txt'
+    
+    _driver = webdriver.Firefox()
+    #TODO: share the modified code
+    _bookmarklet_source = "(function(){readConvertLinksToFootnotes=false;readStyle='style-newspaper';readSize='size-medium';readMargin='margin-wide';_bookm=document.createElement('script');_bookm.type='text/javascript';_bookm.src='" + \
+    settings.READABILITY_BOOKMARKLET + "?x='+Math.random();document.getElementsByTagName('head')[0].appendChild(_bookm);})();"
+    
+    def _check_content_presence(self):
+        try:
+            # this was a modification to readability.js script
+            # if it failed to extract any meaningful content
+            # we renamed the id of the content block to
+            # explicitly indicate this special case
+            self._driver.find_element_by_id('readability-content-failed')
+        except NoSuchElementException:
+            pass
+        else:
+            raise ContentExtractorError('readability failed to extract any content')
+    
+    def extract(self):
+        url = self.data_instance.get_url()
+        self._driver.get(url)
+        self._driver.execute_script(self._bookmarklet_source)
+        
+        try:
+            element = self._driver.find_element_by_id('readInner')
+        except NoSuchElementException:
+            raise ContentExtractorError('readability failed to produce the #readInner DOM node')
+        else:
+            return element.text.encode(self.data_instance.raw_encoding, 'ignore')
+        
+    @classmethod
+    def formatted_result(cls, result_string):
+        #TODO: 
+        pass
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
