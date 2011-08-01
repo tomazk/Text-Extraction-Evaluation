@@ -9,3 +9,4 @@ unittest2==0.5.1
 Thrift==0.1
 justext==1.1
 lxml==2.3
+selenium==2.2.0
