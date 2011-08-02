@@ -7,7 +7,8 @@ import yaml
 
 import settings
 from .util import check_local_path, get_local_path
-from .extractor import extractor_list, ExtractorError, ContentExtractorError
+from .extractor import extractor_list, get_extractor_cls
+from .extractor import  ExtractorError, ContentExtractorError
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,10 @@ class LocalDatasetLoader(BaseDatasetLoader):
     '''Dataset loader using local filesystem'''
     
     @verify_local_dataset
-    def __init__(self, dataset_name, load_failed = None):     
+    def __init__(self, dataset_name, load_failed = None, skip_existing = None):     
         self.dataset = dataset_name   
+        self._skip_existing = skip_existing
+        
         # load meta data
         meta_filepath = get_local_path( dataset_name, 'meta.yaml')
         with open(meta_filepath, 'r') as f:
@@ -52,13 +55,22 @@ class LocalDatasetLoader(BaseDatasetLoader):
     def __iter__(self):
         '''DataInstance generator'''
         for dict in self.meta_yaml:
-            if self._failed_list != None:
-                if dict['id'] in self._failed_list:
-                    yield LocalDocument(self.dataset, **dict)
-                else:
-                    continue
-            else:
-                yield LocalDocument(self.dataset, **dict)
+            document = LocalDocument(self.dataset, **dict)
+            
+            # check if all conditions for yielding a document are set
+            yield_ = True
+            if self._skip_existing != None and \
+            document.check_existing_clean(self._skip_existing):
+                yield_ = False
+            elif self._failed_list != None and \
+            dict['id'] in self._failed_list:
+                yield_ = True
+                
+            if yield_:
+                yield document
+            else: 
+                logger.debug('skipping document %s', document.id)
+                continue
             
     def __len__(self):
         return self._len
@@ -106,6 +118,12 @@ class LocalDocument(BaseDocument):
         file_path = get_local_path(self.dataset,'clean',self.clean_filename)
         with open(file_path, 'r') as f:
             return f.read()
+        
+    def check_existing_clean(self, extractor_slug):
+        ex_cls = get_extractor_cls(extractor_slug)
+        return check_local_path(self.dataset,'result',extractor_slug,
+                                '%s.%s' %(self.id, ex_cls.FORMAT))
+        
         
 class ExtractionSummary(object):
     

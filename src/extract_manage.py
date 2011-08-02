@@ -12,14 +12,16 @@ from txtexeval.util import get_local_path
 
 logger = logging.getLogger()
 
-def local_extract(dataset_name, extractor_slug, timeout, retry_failed):
+def local_extract(dataset_name, extractor_slug, timeout, retry_failed, skip_existing):
     # init storage and loader
     ex = get_extractor_cls(extractor_slug)
     
-    if retry_failed:
-        loader = LocalDatasetLoader(dataset_name, load_failed = extractor_slug)
-    else:
-        loader = LocalDatasetLoader(dataset_name)
+    failed_slug = extractor_slug if retry_failed else None
+    skip_slug = extractor_slug if skip_existing else None
+    
+    loader = LocalDatasetLoader(dataset_name, 
+                                load_failed=failed_slug, 
+                                skip_existing=skip_slug)
     storage = LocalResultStorage(dataset_name, ex)
     
     logger.info('started extracting content from %s dataset using %s', dataset_name, ex.NAME)
@@ -40,6 +42,7 @@ def parse_args(args):
     parser.add_argument('-v','--verbose', action = 'store_true', help = 'print log to console')
     parser.add_argument('-t','--timeout', type=int, default=0, help='wait x seconds between extraction operations')
     parser.add_argument('-rf','--retry_failed', action = 'store_true', help = 'retry to extract text from instances that failed')
+    parser.add_argument('-se','--skip_existing', action = 'store_true', help = 'skip all documents that already have their result stored in the database/filesystem')
     return parser.parse_args(args)
     
 def logging_setup(verbose, output_path):
@@ -62,7 +65,8 @@ def main(args):
     logging_setup(pargs.verbose, get_local_path(pargs.dataset_name,'result','result.log'))
     
     print '[STARTED]'
-    local_extract(pargs.dataset_name, pargs.extractor, pargs.timeout, pargs.retry_failed)
+    local_extract(pargs.dataset_name, pargs.extractor, 
+                  pargs.timeout, pargs.retry_failed, pargs.skip_existing)
     print '[DONE]'
     
 if __name__ == '__main__':
