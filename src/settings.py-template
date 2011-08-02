@@ -35,5 +35,5 @@ ZEMANTA_THRIFT = (
     ('port', <int port number>),
 )
 
-#readability bookmarklet location e.g. http://localhost:8088/readability.js
+#readability bookmarklet location e.g. http://localhost/readability.js
 READABILITY_BOOKMARKLET = 'http://yourplace/readability.js'

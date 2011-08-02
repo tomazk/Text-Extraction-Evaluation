@@ -1,5 +1,6 @@
 import urllib
 import json
+import logging
 
 import readability
 import justext
@@ -10,6 +11,8 @@ import settings
 from .util import Request, html_to_text
 from .util.zemanta.client import ClientManager
 from .evaluation import TextResultFormat, CleanEvalFormat
+
+logging.getLogger('selenium').setLevel(logging.WARN)
 
 class ExtractorError(Exception):
     '''Extractor failed on the network layer'''
@@ -221,30 +224,39 @@ class SeleniumReadabilityExtractor(BaseExtractor):
     SLUG = 'orig_read'
     FORMAT = 'txt'
     
-    _driver = webdriver.Firefox()
+    _driver = None # lazy webdriver.Firefox()
     #TODO: share the modified code
     _bookmarklet_source = "(function(){readConvertLinksToFootnotes=false;readStyle='style-newspaper';readSize='size-medium';readMargin='margin-wide';_bookm=document.createElement('script');_bookm.type='text/javascript';_bookm.src='" + \
     settings.READABILITY_BOOKMARKLET + "?x='+Math.random();document.getElementsByTagName('head')[0].appendChild(_bookm);})();"
     
     def _check_content_presence(self):
+        cls = self.__class__
         try:
             # this was a modification to readability.js script
             # if it failed to extract any meaningful content
             # we renamed the id of the content block to
             # explicitly indicate this special case
-            self._driver.find_element_by_id('readability-content-failed')
+            cls._driver.find_element_by_id('readability-content-failed')
         except NoSuchElementException:
             pass
         else:
             raise ContentExtractorError('readability failed to extract any content')
     
     def extract(self):
+        # lazy init
+        cls = self.__class__
+        if cls._driver == None:
+            cls._driver = webdriver.Firefox()
+        
         url = self.data_instance.get_url()
-        self._driver.get(url)
-        self._driver.execute_script(self._bookmarklet_source)
+        cls._driver.get(url)
+        cls._driver.execute_script(self._bookmarklet_source)
         
         try:
-            element = self._driver.find_element_by_id('readInner')
+            # find the node that contains  content
+            # and check if readability managed to extract anything meaningful
+            element = cls._driver.find_element_by_id('readInner')
+            self._check_content_presence()
         except NoSuchElementException:
             raise ContentExtractorError('readability failed to produce the #readInner DOM node')
         else:
@@ -500,6 +512,7 @@ extractor_list = (
     MSSExtractor,
     PythonReadabilityExtractor,
     NodeReadabilityExtractor,
+    SeleniumReadabilityExtractor,
     AlchemyExtractor,
     DiffbotExtractor,
     ExtractivExtractor,
