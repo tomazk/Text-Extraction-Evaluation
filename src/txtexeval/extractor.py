@@ -91,7 +91,39 @@ class _FormattedResultMin(object):
     def formatted_result(cls, result_string):
         js = json.loads(result_string, encoding = 'utf8')
         return TextResultFormat(js['result'].encode('utf8','ignore'))
-        
+
+
+class TTRDefaultExtractor(_ContentCheckMin,BaseExtractor):
+    '''Boilerpipe default extractor '''
+    
+    NAME = 'TTR'
+    SLUG = 'ttr_def'
+    FORMAT = 'json'
+    
+    _extractor_type = 'default'
+    
+    @check_content_status
+    @return_content
+    def extract(self):
+        html = self.data_instance.get_raw_html()
+        req = Request(
+            settings.TTR_API_ENDPOINT,
+            data = {
+                "extractorType":self._extractor_type,
+                "rawHtml": html.encode(self.data_instance.raw_encoding,'ignore') 
+            },
+            headers = {'Content-Type':'application/x-www-form-urlencoded'}
+        )
+        return req.post()
+    
+    @classmethod
+    def formatted_result(cls, result_string):
+        js = json.loads(result_string, encoding = 'utf8')
+        result_html = js['result'].encode('utf8','ignore')
+        return TextResultFormat(html_to_text(result_html,'utf8'))
+
+
+       
 class BoilerpipeDefaultExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtractor):
     '''Boilerpipe default extractor '''
     
@@ -101,6 +133,7 @@ class BoilerpipeDefaultExtractor(_FormattedResultMin,_ContentCheckMin,BaseExtrac
     
     _extractor_type = 'default'
     
+    @check_content_status
     @return_content
     def extract(self):
         html = self.data_instance.get_raw_html()
@@ -525,6 +558,7 @@ extractor_list = (
     NCleanerNonLexExtractor,
     #TrendictionExtractor,
     JustextExtractor,
+    TTRDefaultExtractor,
 )
 
 def get_extractor_cls(extractor_slug):

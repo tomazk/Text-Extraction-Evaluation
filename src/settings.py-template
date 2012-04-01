@@ -23,6 +23,9 @@ BOILERPIPE_API_ENDPOINT = 'http://yourdomain/boilerpipe/extract/'
 #Goose API url (https://github.com/tomazk/Java-Text-Extractor-API)
 GOOSE_API_ENDPOINT = 'http://yourdomain/goose/extract/'
 
+#TTR API url (https://github.com/tomazk/Java-Text-Extractor-API)
+TTR_API_ENDPOINT = 'http://yourdomain/ttr/extract/'
+
 #Readability API (https://github.com/tomazk/Simple-Readability-API)
 READABILITY_ENDPOINT = 'http://yourdomain/extract/'
 
