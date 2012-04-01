@@ -1,10 +1,12 @@
 import urllib
 import json
 import logging
+import time
 
 import readability
 import justext
 from selenium import webdriver
+from selenium.webdriver import FirefoxProfile
 from selenium.common.exceptions import NoSuchElementException
 
 import settings
@@ -246,10 +248,18 @@ class SeleniumReadabilityExtractor(BaseExtractor):
         # lazy init
         cls = self.__class__
         if cls._driver == None:
-            cls._driver = webdriver.Firefox()
+            # set proxy profile for firefox
+            '''proxy_settings = dict(settings.SELENIUM_PROXY)
+            profile = FirefoxProfile()
+            profile.set_preference("network.proxy.type", 1)
+            profile.set_preference("network.proxy.http", proxy_settings['host'])
+            profile.set_preference("network.proxy.http_port", proxy_settings['port'])'''
+            # init firefox web driver
+            cls._driver = webdriver.Firefox()#profile)
         
-        url = self.data_instance.get_url()
+        url = self.data_instance.get_url_local()
         cls._driver.get(url)
+        time.sleep(2)
         cls._driver.execute_script(self._bookmarklet_source)
         
         try:
@@ -264,8 +274,7 @@ class SeleniumReadabilityExtractor(BaseExtractor):
         
     @classmethod
     def formatted_result(cls, result_string):
-        #TODO: 
-        pass
+        return TextResultFormat(result_string)
 
 class AlchemyExtractor(BaseExtractor):
     '''Alchemy API extractor'''
@@ -520,7 +529,7 @@ extractor_list = (
     ZemantaExtractor,
     NCleanerStdEnExtractor,
     NCleanerNonLexExtractor,
-    TrendictionExtractor,
+    #TrendictionExtractor,
     JustextExtractor,
 )
 

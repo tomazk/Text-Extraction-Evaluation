@@ -84,6 +84,9 @@ class BaseDocument(object):
     
     def get_url(self):
         pass
+
+    def get_url_local(self):
+        pass
     
     def get_clean(self):
         pass
@@ -113,6 +116,11 @@ class LocalDocument(BaseDocument):
         else:
             tail = self.dataset + '/' + self.raw_filename
             return urlparse.urljoin(settings.PATH_REMOTE_DATA, tail)
+        
+    def get_url_local(self):
+        # file:///home/tomaz/workspace/diploma/txt-ex-eval-data/datasets/cleaneval-final/raw/100.html
+        return 'file://' + settings.PATH_LOCAL_DATA + '/datasets/' \
+             + self.dataset + '/raw/' + self.raw_filename
         
     def get_clean(self):
         file_path = get_local_path(self.dataset,'clean',self.clean_filename)

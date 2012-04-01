@@ -37,3 +37,9 @@ ZEMANTA_THRIFT = (
 
 #readability bookmarklet location e.g. http://localhost/readability.js
 READABILITY_BOOKMARKLET = 'http://yourplace/readability.js'
+
+#selenium proxy settings
+SELENIUM_PROXY = (
+    ('host', 'localhost'),
+    ('port', <int port number>),
+)
