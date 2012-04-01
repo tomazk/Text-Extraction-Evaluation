@@ -248,14 +248,8 @@ class SeleniumReadabilityExtractor(BaseExtractor):
         # lazy init
         cls = self.__class__
         if cls._driver == None:
-            # set proxy profile for firefox
-            '''proxy_settings = dict(settings.SELENIUM_PROXY)
-            profile = FirefoxProfile()
-            profile.set_preference("network.proxy.type", 1)
-            profile.set_preference("network.proxy.http", proxy_settings['host'])
-            profile.set_preference("network.proxy.http_port", proxy_settings['port'])'''
             # init firefox web driver
-            cls._driver = webdriver.Firefox()#profile)
+            cls._driver = webdriver.Firefox()
         
         url = self.data_instance.get_url_local()
         cls._driver.get(url)
