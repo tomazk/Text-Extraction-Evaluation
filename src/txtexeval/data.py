@@ -58,7 +58,7 @@ class LocalDatasetLoader(BaseDatasetLoader):
             document = LocalDocument(self.dataset, **dict)
             
             # check if all conditions for yielding a document are set
-            yield_ = True
+            yield_ = False
             if self._skip_existing != None and \
             document.check_existing_clean(self._skip_existing):
                 yield_ = False
