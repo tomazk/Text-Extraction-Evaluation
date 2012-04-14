@@ -126,7 +126,7 @@ def extractor_stat_plot(dataset_name, img_name):
         eq_count_f1 = equidistant_count(0, 1, width, results_list_f1)
         
         # plotting
-        ax = fig.add_subplot(5,3,ex_index+1,projection = '3d')
+        ax = fig.add_subplot(6,3,ex_index+1,projection = '3d')
         
         ax.bar3d(ind,np.array([0]*n), np.array([0]*n) ,
                  dx = width, dy = width*2,dz=eq_count_prec,

@@ -1,6 +1,6 @@
 import unittest2
 
-from plot import equidistant_count
+from plot_manage import equidistant_count
                                  
 class TestEvaluation(unittest2.TestCase):
     
