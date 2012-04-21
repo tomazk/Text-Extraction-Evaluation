@@ -239,13 +239,17 @@ def parse_args(args):
     parser = argparse.ArgumentParser(description = 'Plotting tool')
     parser.add_argument('action', choices = ('dataset_stat', 'extr_stat','contents'))
     parser.add_argument('dataset_name', help = 'name of the dataset')
-    parser.add_argument('-o','--output_img_name', type=str, help = 'name of the output image')
+    parser.add_argument('-f','--format', type=str, help = 'format: png, pdf, ps, eps or svg')
     return parser.parse_args(args)
     
 def main(args):
     pargs = parse_args(args)
-    output_img_name = pargs.output_img_name or \
-                      '%s-%s.png' % (pargs.dataset_name, pargs.action)
+    output_img_name = '%s-%s' % (pargs.dataset_name, pargs.action)
+    if pargs.format:
+        output_img_name = '%s.%s'  % (output_img_name, pargs.format) 
+    else:
+        output_img_name = '%s.%s'  % (output_img_name, 'png') 
+        
     if pargs.action == 'dataset_stat':
         dataset_stat_plot(pargs.dataset_name, output_img_name)
     elif pargs.action == 'extr_stat':
