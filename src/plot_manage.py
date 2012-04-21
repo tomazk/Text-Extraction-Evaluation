@@ -35,9 +35,9 @@ def dataset_stat_plot(dataset_name, img_name):
     elist = extractor_list_filter(txt_results.text_eval_results.keys())
     extractor_slugs = tuple([e.SLUG for e in elist])
     packaged_data = (
-        ('Precision', [ txt_results.precision_statistics(e) for e in extractor_slugs ]),
-        ('Recall', [ txt_results.recall_statistics(e) for e in extractor_slugs ]),
-        ('F1 score', [ txt_results.f1score_statistics(e) for e in extractor_slugs ]),             
+        ('Precision', [ (txt_results.precision_statistics(e), e) for e in extractor_slugs ] ),
+        ('Recall', [ (txt_results.recall_statistics(e), e) for e in extractor_slugs ] ),
+        ('F1 score', [ (txt_results.f1score_statistics(e), e) for e in extractor_slugs ] ),
     )
     
     bar_color = ('b','c','m')
@@ -48,8 +48,12 @@ def dataset_stat_plot(dataset_name, img_name):
         ind = np.arange(num_of_extractors)  # the x locations for the groups
         width = 0.6      # the width of the bars
         
-        avg = [ x[0] for x in pdata[1]]
-        stddev = [ x[1] for x in pdata[1]]
+        result_list = pdata[1]
+        result_list.sort(key=lambda i: i[0][0])
+        result_list.reverse()
+        
+        avg = [ x[0][0] for x in result_list]
+        stddev = [ x[0][1] for x in result_list]
         
         # plot
         plt.subplot(3,1,i+1)
@@ -59,7 +63,7 @@ def dataset_stat_plot(dataset_name, img_name):
             yerr = stddev, linewidth = 0.5, alpha = 0.8)
         
         # lables and titles
-        extractor_names = [ get_extractor_cls(e).NAME for e in extractor_slugs]
+        extractor_names = [ get_extractor_cls(r[1]).NAME for r in result_list]
         plt.title(pdata[0])
         plt.xticks(ind+width/2., extractor_names, size = 'xx-small', rotation = 'vertical')
         plt.legend(  (rects_avg[0],),
