@@ -160,7 +160,7 @@ def extractor_stat_plot(dataset_name, img_name):
         
         ax.set_title(extractor_cls.NAME, size = 'small')
         #ax.set_xlabel('\nlimits',size = 'x-small', linespacing=2)
-        ax.set_zlabel('\nno. of instances',size = 'x-small', linespacing=2)
+        ax.set_zlabel('\nnum. of instances',size = 'x-small', linespacing=1)
         ax.yaxis.set_ticks([])
         resize_axis_tick_labels(ax.xaxis)
         resize_axis_tick_labels(ax.zaxis)
@@ -182,7 +182,7 @@ def extractor_stat_plot(dataset_name, img_name):
     
     # save plot
     out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', img_name)
-    fig.savefig(out_path)
+    fig.savefig(out_path,bbox_inches='tight')
 
     
 def dataset_contents_plot(dataset_name, img_name):
