@@ -93,11 +93,24 @@ def dataset_stat_plot(dataset_name, img_name):
 def equidistant_count(start, stop, step , list):
     '''Return a tuple containing equidistant distribution baskets.'''
     limit_list = np.arange(start,stop, step)
-    count = []
-    for low in limit_list:
-        up = low + step
-        bmap = map(lambda x: 1 if low <= x < up else 0 , list)
-        count.append(sum(bmap))
+    count = [0] * len(limit_list) 
+    
+    for value in list:
+        assert start <= value <= stop
+        mark = False
+        for i, low in enumerate(limit_list):
+            up = low + step
+            if i < len(limit_list)-1 and low <= value < up:
+                count[i] += 1
+                mark =True
+                break
+            elif i == len(limit_list)-1 and low <= value <=up:
+                count[i] += 1
+                mark  =True
+                break
+        if not mark:
+            raise Exception('something very weird is going on - %s' % str(value))
+
     return tuple(count)
 
 def resize_axis_tick_labels(axis, size = 'xx-small'):
@@ -125,9 +138,11 @@ def extractor_stat_plot(dataset_name, img_name):
         width = 0.05  # the width of the bars
         ind = np.arange(0,1,width)
         n = len(ind)
+
         eq_count_prec = equidistant_count(0, 1, width, results_list_prec)
         eq_count_rec = equidistant_count(0, 1, width, results_list_rec)
         eq_count_f1 = equidistant_count(0, 1, width, results_list_f1)
+        
         
         # plotting
         ax = fig.add_subplot(6,3,ex_index+1,projection = '3d')
@@ -168,6 +183,7 @@ def extractor_stat_plot(dataset_name, img_name):
     # save plot
     out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', img_name)
     fig.savefig(out_path)
+
     
 def dataset_contents_plot(dataset_name, img_name):
     '''Plot the error case analysis.'''
