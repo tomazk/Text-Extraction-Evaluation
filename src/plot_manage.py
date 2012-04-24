@@ -96,21 +96,29 @@ def equidistant_count(start, stop, step , list):
     count = [0] * len(limit_list) 
     
     for value in list:
+        value = float(value)
         assert start <= value <= stop
         mark = False
         for i, low in enumerate(limit_list):
             up = low + step
-            if i < len(limit_list)-1 and low <= value < up:
+            #print 'low %s up %s' % (str(low), str(up))
+            if i < (len(limit_list)-1) and low <= value < up:
                 count[i] += 1
                 mark =True
                 break
-            elif i == len(limit_list)-1 and low <= value <=up:
+            elif i == (len(limit_list)-1) and low <= value <=up:
                 count[i] += 1
                 mark  =True
                 break
+        '''
         if not mark:
+            print len(limit_list)
+            print j
+            print value
+            print type(value)
+            print 0.3 <= value < 0.35
             raise Exception('something very weird is going on - %s' % str(value))
-
+        '''
     return tuple(count)
 
 def resize_axis_tick_labels(axis, size = 'xx-small'):
@@ -119,6 +127,7 @@ def resize_axis_tick_labels(axis, size = 'xx-small'):
         
 def extractor_stat_plot(dataset_name, img_name):
     '''Plot the distributions of per-document precision, recall & F1 score '''
+    #np.seterr(all='raise')
     fig = plt.figure()
     
     # get results and repackage the data
@@ -139,10 +148,16 @@ def extractor_stat_plot(dataset_name, img_name):
         ind = np.arange(0,1,width)
         n = len(ind)
 
+        print extractor_cls.NAME
         eq_count_prec = equidistant_count(0, 1, width, results_list_prec)
+        print len(results_list_prec)
+        print sum(eq_count_prec)
         eq_count_rec = equidistant_count(0, 1, width, results_list_rec)
+        print len(results_list_rec)
+        print sum(eq_count_rec)
         eq_count_f1 = equidistant_count(0, 1, width, results_list_f1)
-        
+        print len(results_list_f1)
+        print sum(eq_count_f1)
         
         # plotting
         ax = fig.add_subplot(6,3,ex_index+1,projection = '3d')
@@ -238,7 +253,7 @@ def dataset_contents_plot(dataset_name, img_name):
     ax2.set_xticklabels(extractor_names, size = 'xx-small', rotation = 'vertical')
     
     # grid settings
-    fig.suptitle('Result contents')
+    fig.suptitle('Border cases')
     ax1.grid(True, alpha = 0.5)
     ax2.grid(True, alpha = 0.5)
     
