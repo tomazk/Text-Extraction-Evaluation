@@ -21,6 +21,38 @@ def extractor_list_filter(extractor_slugs):
     '''
     return [e for e in extractor_list if e.SLUG in extractor_slugs]
 
+
+def dataset_stat_latex_print(dataset_name):
+    '''
+    Print the avg precision, recall and F1 score in latex format
+    to console. 
+    '''
+    # get results
+    txt_results = TextBasedResults()
+    txt_results.load(dataset_name)
+    txt_results.print_results()
+    
+    #package results
+    elist = extractor_list_filter(txt_results.text_eval_results.keys())
+    extractor_slugs = tuple([e.SLUG for e in elist])
+    
+    result_list = []
+    for e in extractor_slugs:
+        result_tuple = (
+    		get_extractor_cls(e).NAME,
+    		txt_results.precision_statistics(e)[0],
+    		txt_results.recall_statistics(e)[0],
+    		txt_results.f1score_statistics(e)[0],
+    	)
+        result_list.append(result_tuple)
+    result_list.sort(key = lambda i: i[3])
+    result_list.reverse()
+    
+    for r in result_list:
+        print '\\texttt{%s} & %.4f & %.4f & %.4f \\\\ \\hline' % r
+    
+    
+
 def dataset_stat_plot(dataset_name, img_name):
     '''
     Plot the avg precision, recall and F1 score bar chart for the given dataset
@@ -205,12 +237,10 @@ def dataset_contents_print_latex(dataset_name):
     txt_results = TextBasedResults()
     txt_results.load(dataset_name)
     
-    
     # package data
     elist = extractor_list_filter(txt_results.text_eval_results.keys())
-    extractor_slugs = tuple( [e.SLUG for e in elist] )
     for e in elist:
-    	print '\\texttt{%s} & %d & %d & %d & %d & %d & %d \\\\ \\hline' % \
+        print '\\texttt{%s} & %d & %d & %d & %d & %d & %d \\\\ \\hline' % \
     	(
     	e.NAME,
     	txt_results.result_contents(e.SLUG).rel_empty,
@@ -220,9 +250,6 @@ def dataset_contents_print_latex(dataset_name):
     	txt_results.result_contents(e.SLUG).fail,
     	txt_results.result_contents(e.SLUG).succ,
     	)
-    
- 	
-    
     
 def dataset_contents_plot(dataset_name, img_name):
     '''Plot the error case analysis.'''
@@ -292,13 +319,14 @@ def dataset_contents_plot(dataset_name, img_name):
     
 def parse_args(args):
     parser = argparse.ArgumentParser(description = 'Plotting tool')
-    parser.add_argument('action', choices = ('dataset_stat', 'extr_stat','contents','contents_latex'))
+    parser.add_argument('action', choices = ('dataset_stat', 'extr_stat','contents','contents_latex','dataset_latex'))
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-f','--format', type=str, help = 'format: png, pdf, ps, eps or svg')
     return parser.parse_args(args)
     
 def main(args):
     pargs = parse_args(args)
+    
     output_img_name = '%s-%s' % (pargs.dataset_name, pargs.action)
     if pargs.format:
         output_img_name = '%s.%s'  % (output_img_name, pargs.format) 
@@ -307,6 +335,8 @@ def main(args):
         
     if pargs.action == 'dataset_stat':
         dataset_stat_plot(pargs.dataset_name, output_img_name)
+    elif pargs.action == 'dataset_latex':
+        dataset_stat_latex_print(pargs.dataset_name)        
     elif pargs.action == 'extr_stat':
         extractor_stat_plot(pargs.dataset_name, output_img_name)
     elif pargs.action == 'contents':
