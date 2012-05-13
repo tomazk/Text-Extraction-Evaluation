@@ -101,7 +101,6 @@ def equidistant_count(start, stop, step , list):
         mark = False
         for i, low in enumerate(limit_list):
             up = low + step
-            #print 'low %s up %s' % (str(low), str(up))
             if i < (len(limit_list)-1) and low <= value < up:
                 count[i] += 1
                 mark =True
@@ -199,6 +198,31 @@ def extractor_stat_plot(dataset_name, img_name):
     out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', img_name)
     fig.savefig(out_path,bbox_inches='tight')
 
+
+def dataset_contents_print_latex(dataset_name):
+    '''Print the error case analysis in latex'''
+    # get results
+    txt_results = TextBasedResults()
+    txt_results.load(dataset_name)
+    
+    
+    # package data
+    elist = extractor_list_filter(txt_results.text_eval_results.keys())
+    extractor_slugs = tuple( [e.SLUG for e in elist] )
+    for e in elist:
+    	print '\\texttt{%s} & %d & %d & %d & %d & %d & %d \\\\ \\hline' % \
+    	(
+    	e.NAME,
+    	txt_results.result_contents(e.SLUG).rel_empty,
+    	txt_results.result_contents(e.SLUG).rel_ret_empty,
+    	txt_results.result_contents(e.SLUG).ret_empty,
+    	txt_results.result_contents(e.SLUG).missmatch,
+    	txt_results.result_contents(e.SLUG).fail,
+    	txt_results.result_contents(e.SLUG).succ,
+    	)
+    
+ 	
+    
     
 def dataset_contents_plot(dataset_name, img_name):
     '''Plot the error case analysis.'''
@@ -214,7 +238,7 @@ def dataset_contents_plot(dataset_name, img_name):
         ('|rel| = 0','#9DFADE', [ txt_results.result_contents(ex).rel_empty for ex in extractor_slugs] ),
         ('|rel intersect ret| = 0','#3C70A3', [ txt_results.result_contents(ex).rel_ret_empty for ex in extractor_slugs] ),
         ('|ret| = 0','#5CCBED', [ txt_results.result_contents(ex).ret_empty for ex in extractor_slugs] ),
-        ('missmatch','#A76CF5', [ txt_results.result_contents(ex).missmatch for ex in extractor_slugs] ),
+        ('mismatch','#A76CF5', [ txt_results.result_contents(ex).missmatch for ex in extractor_slugs] ),
         ('failed','#C43156', [ txt_results.result_contents(ex).fail for ex in extractor_slugs] ),
         ('successful','#31C460', [ txt_results.result_contents(ex).succ for ex in extractor_slugs] ),
     ]
@@ -253,7 +277,7 @@ def dataset_contents_plot(dataset_name, img_name):
     ax2.set_xticklabels(extractor_names, size = 'xx-small', rotation = 'vertical')
     
     # grid settings
-    fig.suptitle('Border cases')
+    fig.suptitle('Boundary cases')
     ax1.grid(True, alpha = 0.5)
     ax2.grid(True, alpha = 0.5)
     
@@ -264,11 +288,11 @@ def dataset_contents_plot(dataset_name, img_name):
     
     # output 
     out_path = os.path.join(settings.PATH_LOCAL_DATA, 'plot-output', img_name)
-    fig.savefig(out_path)
+    fig.savefig(out_path,bbox_inches='tight')
     
 def parse_args(args):
     parser = argparse.ArgumentParser(description = 'Plotting tool')
-    parser.add_argument('action', choices = ('dataset_stat', 'extr_stat','contents'))
+    parser.add_argument('action', choices = ('dataset_stat', 'extr_stat','contents','contents_latex'))
     parser.add_argument('dataset_name', help = 'name of the dataset')
     parser.add_argument('-f','--format', type=str, help = 'format: png, pdf, ps, eps or svg')
     return parser.parse_args(args)
@@ -287,6 +311,8 @@ def main(args):
         extractor_stat_plot(pargs.dataset_name, output_img_name)
     elif pargs.action == 'contents':
         dataset_contents_plot(pargs.dataset_name, output_img_name)
+    elif pargs.action == 'contents_latex':
+        dataset_contents_print_latex(pargs.dataset_name)
     
     print '[DONE]'
 
